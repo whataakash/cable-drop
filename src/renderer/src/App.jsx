@@ -12,11 +12,16 @@ import ConnectedDevices from './components/ConnectedDevices'
 import FileBrowser from './components/FileBrowser'
 import SendFilesModal from './components/SendFilesModal'
 import ReceiveFilesModal from './components/ReceiveFilesModal'
+import logo from './assets/logo.png'
 import adb from './adb'
 
 function App() {
-  // Screen state: 'welcome' | 'no-device' | 'devices' | 'files'
-  const [screen, setScreen] = useState('welcome')
+  // Launch animation state: plays smooth logo animation on open
+  const [isLaunching, setIsLaunching] = useState(true)
+  const [splashFading, setSplashFading] = useState(false)
+
+  // Screen state: 'no-device' | 'devices' | 'files'
+  const [screen, setScreen] = useState('no-device')
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState('devices')
@@ -56,7 +61,18 @@ function App() {
     }
   }
 
-  // Load daemon info and poll devices periodically
+  // Launch animation: brief display then smooth transition to main UI
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setSplashFading(true), 1200)
+    const unmountTimer = setTimeout(() => setIsLaunching(false), 1600)
+
+    return () => {
+      clearTimeout(fadeTimer)
+      clearTimeout(unmountTimer)
+    }
+  }, [])
+
+  // Load daemon info and poll devices in background
   useEffect(() => {
     adb.getVersion()
       .then((ver) => setDaemonVersion(ver))
@@ -72,22 +88,8 @@ function App() {
     return () => clearInterval(timer)
   }, [])
 
-  // Handle transition when welcome screen finishes initialization
-  async function handleInitComplete() {
-    const list = await refreshDevices()
-    const hasAuthorizedDevice = list.some((d) => d.state === 'device')
-
-    if (hasAuthorizedDevice) {
-      setScreen('devices')
-    } else {
-      setScreen('no-device')
-    }
-  }
-
-  // Sync screen with real connection state if on device screens
+  // Sync screen with real connection state
   useEffect(() => {
-    if (screen === 'welcome') return
-
     const hasAuthorizedDevice = devices.some((d) => d.state === 'device')
 
     if (screen === 'devices' && !hasAuthorizedDevice) {
@@ -105,7 +107,7 @@ function App() {
   function renderContent() {
     switch (screen) {
       case 'welcome':
-        return <WelcomeScreen onInitComplete={handleInitComplete} />
+        return <WelcomeScreen onInitComplete={() => setScreen('devices')} />
       case 'no-device':
         return <NoDeviceScreen devices={devices} onRescan={refreshDevices} />
       case 'devices':
@@ -143,6 +145,13 @@ function App() {
 
   return (
     <div className="app">
+      {/* Launch animation splash overlay */}
+      {isLaunching && (
+        <div className={`launch-splash ${splashFading ? 'fade-out' : ''}`}>
+          <img src={logo} alt="CableDrop" className="launch-splash-logo" />
+        </div>
+      )}
+
       <Titlebar currentPage={activeTab} onNavigate={handleNavigate} />
 
       <div className="app-body">
@@ -157,12 +166,10 @@ function App() {
         <div className="main-content">{renderContent()}</div>
       </div>
 
-      {screen !== 'welcome' && (
-        <StatusBar
-          daemonVersion={daemonVersion}
-          deviceCount={devices.filter((d) => d.state === 'device').length}
-        />
-      )}
+      <StatusBar
+        daemonVersion={daemonVersion}
+        deviceCount={devices.filter((d) => d.state === 'device').length}
+      />
 
       {showSendModal && <SendFilesModal onClose={() => setShowSendModal(false)} />}
       {showReceiveModal && <ReceiveFilesModal onClose={() => setShowReceiveModal(false)} />}

@@ -1100,3 +1100,43 @@
   align-items: center;
   justify-content: center;
 }
+
+/* ============================================
+   Launch Splash Animation
+   ============================================ */
+.launch-splash {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+}
+
+.launch-splash.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.launch-splash-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 22px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  animation: launchLogoAnim 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes launchLogoAnim {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

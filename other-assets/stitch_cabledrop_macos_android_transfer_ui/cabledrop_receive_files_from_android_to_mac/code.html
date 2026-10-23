@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<title>CableDrop — Receive Files from Android</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#cbc3d7",
+            "primary": "#d0bcff",
+            "on-secondary-fixed-variant": "#5a00c6",
+            "background": "#121316",
+            "tertiary-fixed-dim": "#cebdff",
+            "on-primary-fixed-variant": "#5516be",
+            "tertiary": "#cebdff",
+            "surface-container-highest": "#343538",
+            "inverse-on-surface": "#2f3034",
+            "surface-bright": "#38393c",
+            "secondary-fixed-dim": "#d2bbff",
+            "outline": "#958ea0",
+            "on-tertiary-fixed": "#21005e",
+            "surface-variant": "#343538",
+            "on-tertiary": "#381385",
+            "on-error-container": "#ffdad6",
+            "on-secondary": "#3f008e",
+            "secondary": "#d2bbff",
+            "primary-container": "#a078ff",
+            "surface-container": "#1f1f23",
+            "on-primary-fixed": "#23005c",
+            "on-tertiary-container": "#31057e",
+            "primary-fixed-dim": "#d0bcff",
+            "on-secondary-fixed": "#25005a",
+            "primary-fixed": "#e9ddff",
+            "on-secondary-container": "#c9aeff",
+            "secondary-fixed": "#eaddff",
+            "surface-dim": "#121316",
+            "surface-tint": "#d0bcff",
+            "surface-container-high": "#292a2d",
+            "secondary-container": "#6001d1",
+            "tertiary-container": "#9b7fed",
+            "on-primary": "#3c0091",
+            "error": "#ffb4ab",
+            "on-background": "#e3e2e6",
+            "surface": "#121316",
+            "on-error": "#690005",
+            "inverse-primary": "#6d3bd7",
+            "on-surface": "#e3e2e6",
+            "tertiary-fixed": "#e8ddff",
+            "outline-variant": "#494454",
+            "surface-container-lowest": "#0d0e11",
+            "inverse-surface": "#e3e2e6",
+            "on-primary-container": "#340080",
+            "error-container": "#93000a",
+            "surface-container-low": "#1b1b1f",
+            "on-tertiary-fixed-variant": "#4f319c"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-xl": "1.5rem",
+            "margin": "1rem",
+            "space-sm": "0.5rem",
+            "gutter-compact": "0.5rem",
+            "space-md": "0.75rem",
+            "gutter": "1rem",
+            "space-lg": "1rem",
+            "margin-window": "0.75rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "label-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "code-sm": ["JetBrains Mono"],
+            "label-sm": ["Inter"],
+            "headline-lg": ["Inter"]
+          },
+          "fontSize": {
+            "body-lg": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-md": ["16px", { "lineHeight": "22px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "headline-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "label-lg": ["13px", { "lineHeight": "18px", "fontWeight": "500" }],
+            "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "code-sm": ["11px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "headline-lg": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      vertical-align: middle;
+    }
+    @keyframes transferPulse {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+    .animate-pipeline {
+      animation: transferPulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased overflow-hidden select-none w-screen h-screen flex flex-col justify-center items-center p-4">
+<!-- macOS Window Frame Simulation (1440x900 viewport scale) -->
+<div class="relative w-[1440px] h-[900px] max-w-full max-h-full bg-surface-container-low rounded-xl shadow-2xl border border-outline-variant/30 flex flex-col overflow-hidden">
+<!-- Top Window Titlebar (macOS Chrome + TopNavBar Anchor) -->
+<header class="bg-surface-container-low flex justify-between items-center w-full px-space-md h-9 select-none border-b border-outline-variant">
+<!-- Left: macOS Native Traffic Lights & App Brand -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 pl-1 pr-3">
+<span class="w-3 h-3 rounded-full bg-[#FF5F56] border border-black/10 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-[#FFBD2E] border border-black/10 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-[#27C93F] border border-black/10 inline-block"></span>
+</div>
+<div class="h-4 w-px bg-outline-variant/50"></div>
+<span class="text-headline-md font-headline-md font-semibold text-on-surface tracking-tight flex items-center gap-1.5">
+<span class="text-primary font-bold">CableDrop</span>
+<span class="text-label-sm font-label-sm text-outline px-1.5 py-0.2 bg-surface-container-high rounded border border-outline-variant/40">ADB v34.0.4</span>
+</span>
+</div>
+<!-- Center: Navigation Links (Shared Component Anchor) -->
+<nav class="flex items-center gap-6">
+<button class="text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface px-2 py-1 rounded transition-colors duration-75">Devices</button>
+<button class="text-primary font-label-md font-semibold px-2 py-1 rounded bg-surface-container-high/60 transition-colors duration-75">Transfers</button>
+<button class="text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface px-2 py-1 rounded transition-colors duration-75">Logs</button>
+</nav>
+<!-- Right: Search Bar & Actions -->
+<div class="flex items-center gap-2">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined text-outline absolute left-2 text-[14px]">search</span>
+<input class="h-6 w-52 pl-6 pr-2 bg-surface-container-lowest border border-outline-variant text-code-sm font-code-sm text-on-surface rounded placeholder-outline/60 focus:outline-none focus:border-primary" placeholder="Filter ADB files (/sdcard)..." type="text"/>
+</div>
+<button class="h-6 px-2.5 bg-primary text-on-primary font-label-sm rounded flex items-center gap-1 hover:bg-primary-container transition-colors duration-75">
+<span class="material-symbols-outlined text-[13px]">sync</span>
+<span>Sync</span>
+</button>
+<button class="h-6 px-2 bg-surface-container border border-outline-variant text-on-surface-variant hover:text-on-surface font-label-sm rounded flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">terminal</span>
+<span>Terminal</span>
+</button>
+<button class="w-6 h-6 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">refresh</span>
+</button>
+<button class="w-6 h-6 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">settings</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace Area with Background File Manager Canvas -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- SideNavBar Anchor -->
+<aside class="flex flex-col justify-between w-[220px] h-[calc(100vh-2.25rem)] py-space-sm px-space-xs bg-surface-container-low border-r border-outline-variant">
+<!-- Device Info Header -->
+<div class="px-2 pt-1 pb-3 border-b border-outline-variant/40">
+<div class="flex items-center gap-2">
+<div class="relative">
+<span class="material-symbols-outlined text-primary text-[20px]">smartphone</span>
+<span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#10B981] border border-surface-container-low"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="text-headline-sm font-headline-sm font-semibold text-on-surface truncate">Pixel 8 Pro</div>
+<div class="text-body-sm font-body-sm text-outline truncate">ADB Fast • 128 GB Free</div>
+</div>
+</div>
+<button class="mt-2.5 w-full h-5 text-label-sm font-label-sm text-outline hover:text-error hover:bg-surface-container border border-outline-variant/60 rounded flex items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[12px]">link_off</span>
+            Disconnect
+          </button>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex-1 py-2 space-y-0.5">
+<div class="text-label-sm font-label-sm text-outline px-2 py-1 tracking-wider uppercase font-semibold">Device Roots</div>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">smartphone</span>
+<span>Internal Storage</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">download</span>
+<span>Downloads</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg bg-surface-container-highest text-primary font-label-md font-semibold border-l-2 border-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+<span>DCIM Camera</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">description</span>
+<span>Documents</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">image</span>
+<span>Pictures</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">music_note</span>
+<span>Music</span>
+</a>
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">movie</span>
+<span>Movies</span>
+</a>
+</div>
+<!-- Footer Tab Settings -->
+<div class="pt-2 border-t border-outline-variant/40">
+<a class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant font-label-md hover:bg-surface-container-high hover:text-on-surface">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- Background Dual-Pane File Browser (Dimmable backdrop) -->
+<main class="flex-1 flex flex-col bg-surface-container opacity-40 pointer-events-none filter blur-[1px]">
+<!-- Breadcrumb Bar -->
+<div class="h-8 bg-surface-container-low px-4 flex items-center justify-between border-b border-outline-variant/60">
+<div class="flex items-center gap-1.5 text-code-sm font-code-sm text-outline">
+<span class="text-on-surface font-semibold flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">smartphone</span> Pixel 8 Pro</span>
+<span>/</span>
+<span>sdcard</span>
+<span>/</span>
+<span>DCIM</span>
+<span>/</span>
+<span class="text-primary font-medium">Camera</span>
+</div>
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-outline">
+<span>2,418 items • 42.1 GB</span>
+</div>
+</div>
+<!-- Table View Background -->
+<div class="flex-1 overflow-hidden p-3 font-code-sm text-code-sm">
+<div class="grid grid-cols-12 gap-2 text-outline border-b border-outline-variant pb-1 font-label-sm uppercase">
+<div class="col-span-6">Name</div>
+<div class="col-span-2">Date Modified</div>
+<div class="col-span-2">Type</div>
+<div class="col-span-2 text-right">Size</div>
+</div>
+<div class="divide-y divide-outline-variant/20 pt-1 text-on-surface-variant">
+<div class="grid grid-cols-12 gap-2 py-1.5 bg-primary/10 text-primary font-medium">
+<div class="col-span-6 flex items-center gap-2"><span class="material-symbols-outlined text-[15px]">picture_as_pdf</span> report_q3_final.pdf</div>
+<div class="col-span-2 text-outline">Today, 14:22</div>
+<div class="col-span-2 text-outline">PDF Document</div>
+<div class="col-span-2 text-right">4.2 MB</div>
+</div>
+<div class="grid grid-cols-12 gap-2 py-1.5 bg-primary/10 text-primary font-medium">
+<div class="col-span-6 flex items-center gap-2"><span class="material-symbols-outlined text-[15px]">image</span> vacation_tokyo_042.jpg</div>
+<div class="col-span-2 text-outline">Yesterday, 18:04</div>
+<div class="col-span-2 text-outline">JPEG Image</div>
+<div class="col-span-2 text-right">8.6 MB</div>
+</div>
+<div class="grid grid-cols-12 gap-2 py-1.5 bg-primary/10 text-primary font-medium">
+<div class="col-span-6 flex items-center gap-2"><span class="material-symbols-outlined text-[15px]">movie</span> screen_recording_demo.mp4</div>
+<div class="col-span-2 text-outline">Oct 24, 09:15</div>
+<div class="col-span-2 text-outline">MPEG-4 Video</div>
+<div class="col-span-2 text-right">235.6 MB</div>
+</div>
+<div class="grid grid-cols-12 gap-2 py-1.5">
+<div class="col-span-6 flex items-center gap-2"><span class="material-symbols-outlined text-[15px]">image</span> PXL_20241024_081122.jpg</div>
+<div class="col-span-2 text-outline">Oct 24, 08:11</div>
+<div class="col-span-2 text-outline">JPEG Image</div>
+<div class="col-span-2 text-right">5.1 MB</div>
+</div>
+<div class="grid grid-cols-12 gap-2 py-1.5">
+<div class="col-span-6 flex items-center gap-2"><span class="material-symbols-outlined text-[15px]">image</span> PXL_20241024_081154.jpg</div>
+<div class="col-span-2 text-outline">Oct 24, 08:11</div>
+<div class="col-span-2 text-outline">JPEG Image</div>
+<div class="col-span-2 text-right">6.4 MB</div>
+</div>
+</div>
+</div>
+<!-- Telemetry Bottom Bar -->
+<footer class="h-8 bg-surface-container-low border-t border-outline-variant px-4 flex items-center justify-between text-code-sm font-code-sm text-outline">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1.5 text-on-surface"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> adb server: 5037 active</span>
+<span>|</span>
+<span>buffer: 1024 KB</span>
+</div>
+<div>protocol: adb-push/pull-v2 (crypto enabled)</div>
+</footer>
+</main>
+<!-- ACTIVE MODAL OVERLAY: 'Receive files from Android to Mac' (~680px centered panel) -->
+<div class="absolute inset-0 bg-black/65 backdrop-blur-[2px] flex items-center justify-center p-6 z-50">
+<!-- Native macOS Sheet / Dialog Container (680px) -->
+<section class="w-[680px] bg-surface-container-low border border-outline-variant rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.7)] flex flex-col overflow-hidden text-on-surface">
+<!-- Modal Header -->
+<div class="px-5 py-3.5 bg-surface-container border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<div class="w-7 h-7 rounded-lg bg-primary-container/20 border border-primary/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+</div>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-semibold tracking-tight text-on-surface">Receive files from Android</h1>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Pull selected payload directly over high-speed USB-ADB daemon</p>
+</div>
+</div>
+<button class="w-7 h-7 rounded flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Directional Transfer Diagram Banner -->
+<div class="px-5 py-3 bg-surface-container-lowest/80 border-b border-outline-variant flex items-center justify-between gap-4">
+<!-- Source (Android) -->
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant/60">
+<span class="material-symbols-outlined text-[18px]">smartphone</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-label-md font-label-md font-semibold text-on-surface flex items-center gap-1.5 truncate">
+                  Google Pixel 8 Pro
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+</span>
+<span class="text-code-sm font-code-sm text-outline truncate">/sdcard/DCIM/Camera/</span>
+</div>
+</div>
+<!-- Direction Indicator with Pulse Line -->
+<div class="flex-1 flex flex-col items-center px-2">
+<div class="text-[10px] uppercase font-label-sm tracking-widest text-primary font-semibold flex items-center gap-1">
+<span>ADB STREAM PULL</span>
+<span class="material-symbols-outlined text-[12px]">download</span>
+</div>
+<div class="relative w-full h-1 bg-surface-container-highest rounded-full overflow-hidden mt-1">
+<div class="absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-primary to-transparent animate-pipeline rounded-full"></div>
+</div>
+</div>
+<!-- Destination (Mac) -->
+<div class="flex items-center gap-2.5 min-w-0 text-right justify-end">
+<div class="flex flex-col min-w-0">
+<span class="text-label-md font-label-md font-semibold text-on-surface truncate">Mac Workstation</span>
+<span class="text-code-sm font-code-sm text-outline truncate">~/Downloads/CableDrop/</span>
+</div>
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/60">
+<span class="material-symbols-outlined text-[18px]">laptop_mac</span>
+</div>
+</div>
+</div>
+<!-- Body Content Area -->
+<div class="p-5 space-y-4">
+<!-- Source Items Selected Header + Items Preview List -->
+<div>
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="text-label-md font-label-md font-semibold text-on-surface">Selected Files to Pull</span>
+<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 text-label-sm font-label-sm font-semibold">
+                    3 items selected from Android (248.4 MB)
+                  </span>
+</div>
+<span class="text-code-sm font-code-sm text-outline">Payload verified</span>
+</div>
+<!-- Preview List of Files Being Pulled -->
+<div class="border border-outline-variant rounded-lg bg-surface-container divide-y divide-outline-variant/30 overflow-hidden">
+<!-- File Item 1 -->
+<div class="px-3 py-2 flex items-center justify-between hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-outline text-[16px]">picture_as_pdf</span>
+<span class="text-body-md font-body-md font-medium text-on-surface truncate">report_q3_final.pdf</span>
+<span class="text-code-sm font-code-sm text-outline">4.2 MB</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+<span class="text-code-sm font-code-sm text-on-surface-variant">Verified ADB stream</span>
+</div>
+</div>
+<!-- File Item 2 -->
+<div class="px-3 py-2 flex items-center justify-between hover:bg-surface-container-high/40 transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-outline text-[16px]">image</span>
+<span class="text-body-md font-body-md font-medium text-on-surface truncate">vacation_tokyo_042.jpg</span>
+<span class="text-code-sm font-code-sm text-outline">8.6 MB</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-code-sm font-code-sm text-on-surface-variant">Thumbnail ready</span>
+</div>
+</div>
+<!-- File Item 3 (Active) -->
+<div class="px-3 py-2 flex items-center justify-between bg-primary/5 hover:bg-primary/10 transition-colors">
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="material-symbols-outlined text-primary text-[16px]">movie</span>
+<span class="text-body-md font-body-md font-medium text-primary truncate">screen_recording_demo.mp4</span>
+<span class="text-code-sm font-code-sm text-primary/70">235.6 MB</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span class="text-code-sm font-code-sm text-primary font-medium">High-speed sync</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mac Destination Directory Picker -->
+<div class="space-y-2">
+<label class="text-label-md font-label-md font-semibold text-on-surface flex items-center gap-1">
+<span>Save location on Mac:</span>
+</label>
+<div class="flex items-center gap-2">
+<div class="flex-1 flex items-center gap-2 px-3 h-8 bg-surface-container-lowest border border-outline-variant rounded text-code-sm font-code-sm text-on-surface overflow-hidden">
+<span class="material-symbols-outlined text-primary text-[16px]">folder</span>
+<span class="truncate">~/Downloads/CableDrop/2024-10-24/</span>
+</div>
+<button class="h-8 px-3 bg-surface-container border border-outline-variant hover:border-outline text-on-surface text-label-md font-label-md font-medium rounded flex items-center gap-1.5 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">folder_open</span>
+<span>Choose folder on Mac...</span>
+</button>
+</div>
+<!-- Destination Options / Flags -->
+<div class="pt-1 grid grid-cols-2 gap-2 text-body-sm font-body-sm text-on-surface-variant">
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input checked="" class="w-3.5 h-3.5 rounded bg-surface-container-lowest border border-outline-variant text-primary focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span>Create subfolder with device name & date</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer select-none">
+<input checked="" class="w-3.5 h-3.5 rounded bg-surface-container-lowest border border-outline-variant text-primary focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<span>Open folder in Finder when complete</span>
+</label>
+</div>
+</div>
+<!-- Transfer Progress & Health States Section -->
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/60 space-y-2.5">
+<div class="flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[16px] animate-spin">sync</span>
+<span class="font-medium text-on-surface truncate">Receiving screen_recording_demo.mp4</span>
+</div>
+<span class="text-code-sm font-code-sm font-semibold text-primary">82%</span>
+</div>
+<!-- Animated Progress Bar -->
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-secondary-container via-primary-container to-primary rounded-full transition-all duration-300" style="width: 82%;"></div>
+</div>
+<!-- Active Metrics Readout -->
+<div class="flex items-center justify-between text-code-sm font-code-sm text-outline">
+<span>193 MB / 235.6 MB</span>
+<span class="text-primary font-medium">104 MB/s (USB 3.2 Gen 1)</span>
+<span>ETA: 0.4s</span>
+</div>
+<!-- System Health Status / Pre-flight Check -->
+<div class="pt-2 border-t border-outline-variant/40 flex items-center justify-between text-code-sm font-code-sm">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[#10B981] text-[14px]">check_circle</span>
+<span>Device storage OK (128 GB free)</span>
+</div>
+<span class="text-outline">•</span>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[#10B981] text-[14px]">check_circle</span>
+<span>Mac destination disk space OK (412 GB free)</span>
+</div>
+</div>
+</div>
+<!-- Edge Case Callout Banner -->
+<div class="px-3 py-2 rounded bg-surface-container border border-outline-variant/40 flex items-center gap-2.5 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-secondary text-[16px]">verified_user</span>
+<span>ADB fast pull protocol handles permissions seamlessly without root authorization.</span>
+</div>
+</div>
+<!-- Modal Footer Actions -->
+<div class="px-5 py-3.5 bg-surface-container border-t border-outline-variant flex items-center justify-between">
+<button class="h-7 px-3 bg-transparent hover:bg-surface-container-high border border-outline-variant text-on-surface font-label-md font-medium rounded transition-colors">
+              Cancel
+            </button>
+<div class="flex items-center gap-2">
+<span class="text-code-sm font-code-sm text-outline mr-1">Press ⏎ to save</span>
+<button class="h-7 px-4 bg-primary text-on-primary font-label-md font-semibold rounded flex items-center gap-1.5 shadow-md hover:bg-primary-container transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[15px]">download</span>
+<span>Save to Mac</span>
+</button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+</body></html>
