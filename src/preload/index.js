@@ -11,6 +11,7 @@ const adb = {
   startServer: () => ipcRenderer.invoke('adb:startServer'),
   killServer: () => ipcRenderer.invoke('adb:killServer'),
   listFiles: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
+  listDirectory: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
   pushFile: (deviceId, local, remote) => ipcRenderer.invoke('adb:pushFile', deviceId, local, remote),
   pullFile: (deviceId, remote, local) => ipcRenderer.invoke('adb:pullFile', deviceId, remote, local),
   raw: (args) => ipcRenderer.invoke('adb:raw', args)

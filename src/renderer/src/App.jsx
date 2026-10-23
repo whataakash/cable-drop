@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react'
 
 import Titlebar from './components/Titlebar'
-import Sidebar from './components/Sidebar'
 import StatusBar from './components/StatusBar'
 import WelcomeScreen from './components/WelcomeScreen'
 import NoDeviceScreen from './components/NoDeviceScreen'
@@ -26,8 +25,8 @@ function App() {
   // Navigation tab state
   const [activeTab, setActiveTab] = useState('devices')
 
-  // Selected folder in sidebar
-  const [activeFolder, setActiveFolder] = useState('Internal Storage')
+  // Selected folder path in file browser
+  const [browserPath, setBrowserPath] = useState('/sdcard')
 
   // Modals
   const [showSendModal, setShowSendModal] = useState(false)
@@ -86,6 +85,12 @@ function App() {
     )
   }
 
+  // Switch the actively browsed device
+  function handleSelectDevice(dev) {
+    setSelectedDevice(dev)
+    setBrowserPath('/sdcard')
+  }
+
   // Launch animation: brief display then smooth transition to main UI
   useEffect(() => {
     const fadeTimer = setTimeout(() => setSplashFading(true), 1800)
@@ -119,14 +124,15 @@ function App() {
 
     if (screen === 'devices' && !hasAuthorizedDevice) {
       setScreen('no-device')
+      setActiveTab('devices')
     } else if (screen === 'no-device' && hasAuthorizedDevice) {
       setScreen('devices')
+      setActiveTab('devices')
     }
   }, [devices, screen])
 
-  const hasAuthorized = devices.some((d) => d.state === 'device')
-  const showSidebar = hasAuthorized && (screen === 'devices' || screen === 'files')
-  const activeDevice = selectedDevice || devices.find((d) => d.state === 'device') || null
+  const authorizedDevices = devices.filter((d) => d.state === 'device')
+  const activeDevice = selectedDevice || authorizedDevices[0] || null
 
   // Render main screen area
   function renderContent() {
@@ -142,7 +148,8 @@ function App() {
             onRescan={refreshDevices}
             onRenameDevice={handleRenameDevice}
             onBrowseFiles={(dev) => {
-              setSelectedDevice(dev)
+              handleSelectDevice(dev)
+              setActiveTab('files')
               setScreen('files')
             }}
           />
@@ -151,6 +158,9 @@ function App() {
         return (
           <FileBrowser
             device={activeDevice}
+            devices={authorizedDevices}
+            onSelectDevice={handleSelectDevice}
+            initialPath={browserPath}
             onSendFiles={() => setShowSendModal(true)}
             onReceiveFiles={() => setShowReceiveModal(true)}
           />
@@ -166,6 +176,8 @@ function App() {
     if (tab === 'devices') {
       const hasAuth = devices.some((d) => d.state === 'device')
       setScreen(hasAuth ? 'devices' : 'no-device')
+    } else if (tab === 'files') {
+      setScreen('files')
     }
   }
 
@@ -184,23 +196,15 @@ function App() {
         </div>
       )}
 
-      <Titlebar currentPage={activeTab} onNavigate={handleNavigate} />
+      <Titlebar device={activeDevice} currentPage={activeTab} onNavigate={handleNavigate} />
 
       <div className="app-body">
-        {showSidebar && (
-          <Sidebar
-            device={activeDevice}
-            activeFolder={activeFolder}
-            onFolderClick={setActiveFolder}
-          />
-        )}
-
         <div className="main-content">{renderContent()}</div>
       </div>
 
       <StatusBar
         daemonVersion={daemonVersion}
-        deviceCount={devices.filter((d) => d.state === 'device').length}
+        deviceCount={authorizedDevices.length}
       />
 
       {showSendModal && <SendFilesModal onClose={() => setShowSendModal(false)} />}

@@ -38,7 +38,7 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
           </span>
         </h2>
         <div className="devices-header-actions">
-          <button className="btn btn-secondary" onClick={onRescan}>🔌 Rescan Bus</button>
+          <button className="btn btn-secondary" onClick={onRescan}>Re-Scan</button>
         </div>
       </div>
 

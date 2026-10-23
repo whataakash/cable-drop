@@ -26,55 +26,83 @@
 }
 
 /* ============================================
-   Titlebar
-   macOS-style top bar with drag region
+   Header & Titlebar
+   macOS minimizer bar on top, titlebar below
    ============================================ */
-.titlebar {
-  height: var(--titlebar-h);
+.app-header {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   background: var(--bg-surface-1);
   border-bottom: 1px solid var(--border-main);
+}
+
+/* Top macOS traffic light / window drag bar */
+.mac-window-bar {
+  height: 28px;
+  width: 100%;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+}
+
+/* Main titlebar placed below the mac minimizer bar */
+.titlebar {
+  position: relative;
+  height: 52px;
   display: flex;
   align-items: center;
-  padding: 0 var(--space-lg);
-  -webkit-app-region: drag; /* makes it draggable */
-  gap: var(--space-lg);
-  flex-shrink: 0;
+  padding: 0 var(--space-xl);
+  -webkit-app-region: drag;
 }
 
-/* space for macOS traffic lights (close/min/max buttons) */
-.titlebar-traffic-spacer {
-  width: 70px;
-  flex-shrink: 0;
+/* Left-aligned group: Brand logo + typed title + nav tabs */
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  -webkit-app-region: no-drag;
 }
 
+/* Brand logo and typed title on extreme left */
 .titlebar-brand {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  font-weight: 600;
-  font-size: 14px;
+  gap: 12px;
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  user-select: none;
 }
 
 .titlebar-brand-icon {
-  width: 16px;
-  height: 16px;
-  color: var(--violet);
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
-/* nav tabs inside the titlebar */
+.titlebar-brand-title {
+  white-space: nowrap;
+}
+
+/* Nav tabs inside the titlebar */
 .titlebar-nav {
   display: flex;
-  gap: 2px;
-  -webkit-app-region: no-drag; /* clicks should work on tabs */
+  align-items: center;
+  gap: 6px;
 }
 
 .titlebar-tab {
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   background: none;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -88,30 +116,31 @@
   background: var(--violet);
 }
 
-/* push right-side items to the end */
-.titlebar-spacer {
-  flex: 1;
-}
-
-.titlebar-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  -webkit-app-region: no-drag;
-}
-
-/* small status pill in the titlebar center */
+/* Status pill centered horizontally in the entire titlebar */
 .titlebar-status {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
-  padding: 3px 12px;
+  gap: 10px;
+  padding: 6px 18px;
   border-radius: var(--radius-lg);
   background: var(--bg-surface-2);
   border: 1px solid var(--border-main);
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
   font-family: 'Space Mono', monospace;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+.titlebar-status .status-dot {
+  width: 9px;
+  height: 9px;
 }
 
 /* ============================================
@@ -206,10 +235,21 @@
   flex-shrink: 0;
 }
 
-.status-dot.ok { background: var(--status-ok); }
-.status-dot.warn { background: var(--status-warn); }
-.status-dot.active { background: var(--violet); }
-.status-dot.off { background: var(--text-muted); }
+.status-dot.ok {
+  background: var(--status-ok);
+}
+
+.status-dot.warn {
+  background: var(--status-warn);
+}
+
+.status-dot.active {
+  background: var(--violet);
+}
+
+.status-dot.off {
+  background: var(--text-muted);
+}
 
 /* ============================================
    Buttons
@@ -244,6 +284,12 @@
 
 .btn-secondary:hover {
   background: var(--bg-surface-3);
+}
+
+.btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* ============================================
@@ -418,7 +464,7 @@
   font-weight: 700;
 }
 
-.no-device > p {
+.no-device>p {
   color: var(--text-muted);
   max-width: 480px;
   font-size: 13px;
@@ -1188,6 +1234,7 @@
     opacity: 0;
     transform: scale(0.85);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -1220,8 +1267,63 @@
     opacity: 0;
     transform: translateY(8px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* ============================================
+   File Browser Status & Feedback
+   ============================================ */
+.filebrowser-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  gap: var(--space-md);
+  color: var(--text-muted);
+}
+
+.filebrowser-message-icon {
+  font-size: 36px;
+  opacity: 0.8;
+}
+
+.filebrowser-message-text {
+  font-size: 14px;
+}
+
+.filebrowser-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid var(--status-error);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+}
+
+.filebrowser-error p {
+  color: var(--status-error);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.device-select-dropdown {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-main);
+  color: var(--text-primary);
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
 }

@@ -27,7 +27,7 @@ function SendFilesModal({ onClose }) {
           <div className="transfer-direction">
             <span>🖥 Mac Workstation (Local Finder)</span>
             <span className="transfer-direction-arrow">→</span>
-            <span>📱 Google Pixel 8 Pro (/sdcard/Download)</span>
+            <span>📱 Google Pixel 8 Pro (Internal Storage/Download)</span>
             <span className="badge ok" style={{ marginLeft: 'auto' }}>READY</span>
           </div>
 
@@ -77,7 +77,7 @@ function SendFilesModal({ onClose }) {
             <div className="target-dir-label">TARGET ANDROID DIRECTORY</div>
             <div className="target-dir-row">
               <span>📁</span>
-              <span className="target-dir-path">/sdcard/Download/ProductAssets/</span>
+              <span className="target-dir-path">Internal Storage/Download/ProductAssets/</span>
               <button className="btn btn-secondary">📁 Change destination directory...</button>
             </div>
           </div>

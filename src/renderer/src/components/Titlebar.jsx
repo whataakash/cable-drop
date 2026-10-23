@@ -1,49 +1,60 @@
-// Titlebar — macOS-style top bar with nav tabs
-// Shows app name, navigation, and status indicator
+// Titlebar — macOS minimizer bar on top with app header below
+// Left: Cable Drop logo + typed text + Devices/Files tabs
+// Center: live connection status pill
 
 import logo from '../assets/logo.png'
 
-function Titlebar({ currentPage, onNavigate }) {
-  const tabs = ['Devices', 'Transfers', 'Logs']
+function Titlebar({ device, currentPage, onNavigate }) {
+  const deviceName = device?.name || device?.model || 'Android Device'
 
   return (
-    <div className="titlebar">
-      {/* space for macOS traffic light buttons (close/minimize/maximize) */}
-      <div className="titlebar-traffic-spacer" />
+    <header className="app-header">
+      {/* 1. macOS traffic light / window drag bar */}
+      <div className="mac-window-bar" />
 
-      <div className="titlebar-brand">
-        <img src={logo} alt="CableDrop" className="titlebar-brand-icon" />
-        <span>CableDrop</span>
+      {/* 2. Main titlebar placed below the minimizer bar */}
+      <div className="titlebar">
+        {/* Left-aligned cluster: Brand logo + typed title + nav tabs */}
+        <div className="titlebar-left">
+          <div className="titlebar-brand">
+            <img src={logo} alt="Cable Drop" className="titlebar-brand-icon" />
+            <span className="titlebar-brand-title">Cable Drop</span>
+          </div>
+
+          <div className="titlebar-nav">
+            <button
+              className={`titlebar-tab ${currentPage === 'devices' ? 'active' : ''}`}
+              onClick={() => onNavigate('devices')}
+            >
+              Devices
+            </button>
+            {device && (
+              <button
+                className={`titlebar-tab ${currentPage === 'files' ? 'active' : ''}`}
+                onClick={() => onNavigate('files')}
+              >
+                Files
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Center-aligned status pill */}
+        <div className="titlebar-status">
+          {device ? (
+            <>
+              <span className="status-dot ok" />
+              <span>connected to {deviceName}</span>
+            </>
+          ) : (
+            <>
+              <span className="status-dot active" />
+              <span>Searching for USB devices...</span>
+            </>
+          )}
+        </div>
       </div>
-
-      {/* nav tabs */}
-      <div className="titlebar-nav">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            className={`titlebar-tab ${currentPage === tab.toLowerCase() ? 'active' : ''}`}
-            onClick={() => onNavigate(tab.toLowerCase())}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="titlebar-spacer" />
-
-      {/* center status pill */}
-      <div className="titlebar-status">
-        <span className="status-dot active" />
-        Searching for USB devices...
-      </div>
-
-      <div className="titlebar-spacer" />
-
-      {/* right-side buttons */}
-      <div className="titlebar-right">
-        <button className="btn btn-secondary">⌨ Terminal</button>
-      </div>
-    </div>
+    </header>
   )
 }
 

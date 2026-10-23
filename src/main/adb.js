@@ -170,6 +170,174 @@ export async function killAdbServer() {
   return await runAdb(['kill-server'])
 }
 
+// Helper to run ADB targeting a specific device serial using spawn
+export function runAdbDevice(deviceId, shellArgs = []) {
+  return new Promise((resolve, reject) => {
+    // Validate device serial
+    if (!deviceId || typeof deviceId !== 'string' || !/^[a-zA-Z0-9.:_-]+$/.test(deviceId)) {
+      return reject(new Error('Invalid or missing device serial'))
+    }
+
+    const adbPath = getAdbPath()
+    const child = spawn(adbPath, ['-s', deviceId, ...shellArgs])
+
+    let stdout = ''
+    let stderr = ''
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString()
+    })
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString()
+    })
+
+    child.on('error', (err) => {
+      reject(err)
+    })
+
+    child.on('close', (code) => {
+      const combined = (stdout + '\n' + stderr).trim()
+
+      if (combined.includes('device unauthorized') || stderr.includes('device unauthorized')) {
+        return reject(new Error('Device unauthorized. Please unlock phone and confirm USB debugging prompt.'))
+      }
+      if (combined.includes('device offline') || stderr.includes('device offline')) {
+        return reject(new Error('Device is offline.'))
+      }
+      if (combined.includes('device not found') || stderr.includes('device not found') || (code !== 0 && combined.includes('not found') && !stdout.trim())) {
+        return reject(new Error(`Device "${deviceId}" not found or disconnected.`))
+      }
+      if (code !== 0 && !stdout.trim()) {
+        return reject(new Error(stderr.trim() || `Command failed with code ${code}`))
+      }
+      resolve(stdout.trim())
+    })
+  })
+}
+
+// 5. List contents of an Android directory using bundled ADB
+export async function listDirectory(deviceId, remotePath = '/sdcard') {
+  // Validate device serial
+  if (!deviceId || typeof deviceId !== 'string' || !/^[a-zA-Z0-9.:_-]+$/.test(deviceId)) {
+    throw new Error('Invalid or missing device serial')
+  }
+
+  // Validate directory path
+  if (!remotePath || typeof remotePath !== 'string' || !remotePath.startsWith('/')) {
+    throw new Error('Invalid directory path: must start with /')
+  }
+
+  // Reject shell command injection characters
+  if (/[\0;&|`$\n\r]/.test(remotePath)) {
+    throw new Error('Invalid characters in directory path')
+  }
+
+  // Normalize path and remove double slashes
+  let cleanPath = remotePath.replace(/\/+/g, '/')
+  if (cleanPath.length > 1 && cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1)
+  }
+
+  // Add trailing slash so ls lists directory contents (especially for symlinks like /sdcard)
+  const targetWithSlash = cleanPath === '/' ? '/' : cleanPath + '/'
+  const safeArg = `"${targetWithSlash.replace(/"/g, '\\"')}"`
+
+  const output = await runAdbDevice(deviceId, ['shell', 'ls', '-la', safeArg])
+
+  // Check for shell errors returned in output
+  if (output.includes('Permission denied')) {
+    throw new Error(`Permission denied: cannot access ${cleanPath}`)
+  }
+  if (output.includes('No such file or directory')) {
+    throw new Error(`Directory not found: ${cleanPath}`)
+  }
+  if (output.includes('Not a directory')) {
+    throw new Error(`Not a directory: ${cleanPath}`)
+  }
+
+  const lines = output.split('\n')
+  const files = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('total ')) continue
+
+    // Mode regex: matches file permissions (e.g. drwxrwxrwx or -rw-r--r--)
+    const modeMatch = trimmed.match(/^([bcdlps-][rwxstST-]{9})\s+/)
+    if (!modeMatch) continue
+
+    const permissions = modeMatch[1]
+    const isFolder = permissions[0] === 'd'
+    const isSymlink = permissions[0] === 'l'
+
+    const rest = trimmed.slice(modeMatch[0].length).trim()
+
+    let size = 0
+    let date = ''
+    let rawName = ''
+
+    // Match ISO date format: YYYY-MM-DD HH:MM
+    const dateTimeRegex = /\s+(\d{4}-\d{2}-\d{2})\s+(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/
+    const m = rest.match(dateTimeRegex)
+
+    if (m) {
+      date = `${m[1]} ${m[2]}`
+      rawName = m[3]
+      const beforeDate = rest.slice(0, m.index).trim().split(/\s+/)
+      size = parseInt(beforeDate[beforeDate.length - 1], 10) || 0
+    } else {
+      // Fallback for Month Day format
+      const legacyRegex = /\s+([A-Za-z]{3}\s+\d{1,2})\s+([\d:]{4,5}|\d{4})\s+(.+)$/
+      const lm = rest.match(legacyRegex)
+      if (lm) {
+        date = `${lm[1]} ${lm[2]}`
+        rawName = lm[3]
+        const beforeDate = rest.slice(0, lm.index).trim().split(/\s+/)
+        size = parseInt(beforeDate[beforeDate.length - 1], 10) || 0
+      } else {
+        const parts = rest.split(/\s+/)
+        if (parts.length >= 4) {
+          rawName = parts.slice(3).join(' ')
+        } else {
+          continue
+        }
+      }
+    }
+
+    let name = rawName
+    if (isSymlink) {
+      const arrowIdx = rawName.indexOf(' -> ')
+      if (arrowIdx !== -1) {
+        name = rawName.slice(0, arrowIdx).trim()
+      }
+    }
+
+    // Skip current (.) and parent (..) directory entries
+    if (name === '.' || name === '..') continue
+
+    const fullPath = cleanPath === '/' ? `/${name}` : `${cleanPath}/${name}`
+
+    files.push({
+      name,
+      fullPath,
+      isFolder,
+      size: isFolder ? 0 : size,
+      date,
+      permissions
+    })
+  }
+
+  // Sort folders first, then files alphabetically
+  files.sort((a, b) => {
+    if (a.isFolder && !b.isFolder) return -1
+    if (!a.isFolder && b.isFolder) return 1
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+  })
+
+  return files
+}
+
 // Register IPC handlers for Electron
 export function setupAdbIpc() {
   ipcMain.handle('adb:getPath', () => getAdbPath())
@@ -177,5 +345,7 @@ export function setupAdbIpc() {
   ipcMain.handle('adb:devices', () => getConnectedDevices())
   ipcMain.handle('adb:startServer', () => startAdbServer())
   ipcMain.handle('adb:killServer', () => killAdbServer())
+  ipcMain.handle('adb:listFiles', (_, deviceId, path) => listDirectory(deviceId, path))
+  ipcMain.handle('adb:listDirectory', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:raw', (_, args) => runAdb(args))
 }

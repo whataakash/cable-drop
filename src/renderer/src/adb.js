@@ -54,6 +54,11 @@ export const adb = {
     return await bridge.listFiles(deviceId, path)
   },
 
+  // Alias for listFiles
+  async listDirectory(deviceId, path = '/sdcard') {
+    return await this.listFiles(deviceId, path)
+  },
+
   // Push file from Mac to Android
   async pushFile(deviceId, localPath, remotePath) {
     const bridge = getBridge()
