@@ -1,7 +1,32 @@
 // ConnectedDevices — displays actual Android devices detected via ADB
-// Shows phone model, authorization state, serial, and connection status
+// Allows renaming device nicknames and navigating to file browser
 
-function ConnectedDevices({ devices = [], onBrowseFiles, onRescan }) {
+import { useState } from 'react'
+
+function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevice }) {
+  // State for inline device renaming
+  const [editingId, setEditingId] = useState(null)
+  const [editName, setEditName] = useState('')
+
+  // Begin editing device name
+  function startEditing(device) {
+    setEditingId(device.id)
+    setEditName(device.name || '')
+  }
+
+  // Save new device name and exit editing mode
+  function saveEditing(deviceId) {
+    if (onRenameDevice) {
+      onRenameDevice(deviceId, editName)
+    }
+    setEditingId(null)
+  }
+
+  // Cancel editing without saving
+  function cancelEditing() {
+    setEditingId(null)
+  }
+
   return (
     <div>
       {/* page header */}
@@ -25,6 +50,7 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan }) {
       {devices.map((device) => {
         const isAuthorized = device.state === 'device'
         const isUnauthorized = device.state === 'unauthorized'
+        const isEditing = editingId === device.id
 
         return (
           <div key={device.id} className="device-card">
@@ -33,7 +59,48 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan }) {
                 <div className="device-card-icon">📱</div>
                 <div>
                   <div className="device-card-name">
-                    {device.name}
+                    {isEditing ? (
+                      <div className="rename-form">
+                        <input
+                          type="text"
+                          className="rename-input"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEditing(device.id)
+                            if (e.key === 'Escape') cancelEditing()
+                          }}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="rename-action-btn save"
+                          onClick={() => saveEditing(device.id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          className="rename-action-btn"
+                          onClick={cancelEditing}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <span>{device.name}</span>
+                        <button
+                          type="button"
+                          className="rename-btn"
+                          title="Rename device"
+                          onClick={() => startEditing(device)}
+                        >
+                          ✎ Rename
+                        </button>
+                      </>
+                    )}
+
                     {isAuthorized && (
                       <span className="badge ok">
                         <span className="status-dot ok" /> Connected &amp; Authorized

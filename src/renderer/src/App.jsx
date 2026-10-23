@@ -42,29 +42,54 @@ function App() {
   async function refreshDevices() {
     try {
       const list = await adb.getDevices()
-      setDevices(list)
+
+      // Apply saved custom nicknames from localStorage
+      const listWithNames = list.map((dev) => {
+        const saved = localStorage.getItem('device_name_' + dev.id)
+        return saved ? { ...dev, name: saved } : dev
+      })
+
+      setDevices(listWithNames)
 
       // Set active device
-      const authorized = list.find((d) => d.state === 'device')
+      const authorized = listWithNames.find((d) => d.state === 'device')
       if (authorized) {
-        setSelectedDevice((prev) => (prev ? list.find((d) => d.id === prev.id) || authorized : authorized))
-      } else if (list.length > 0) {
-        setSelectedDevice(list[0])
+        setSelectedDevice((prev) => (prev ? listWithNames.find((d) => d.id === prev.id) || authorized : authorized))
+      } else if (listWithNames.length > 0) {
+        setSelectedDevice(listWithNames[0])
       } else {
         setSelectedDevice(null)
       }
 
-      return list
+      return listWithNames
     } catch (err) {
       console.error('Failed to query ADB devices:', err)
       return []
     }
   }
 
+  // Handle renaming a device and persisting it
+  function handleRenameDevice(deviceId, newName) {
+    const trimmed = newName.trim()
+    if (trimmed) {
+      localStorage.setItem('device_name_' + deviceId, trimmed)
+    } else {
+      localStorage.removeItem('device_name_' + deviceId)
+    }
+
+    setDevices((prev) =>
+      prev.map((d) => (d.id === deviceId ? { ...d, name: trimmed || d.model || 'Android Device' } : d))
+    )
+
+    setSelectedDevice((prev) =>
+      prev && prev.id === deviceId ? { ...prev, name: trimmed || prev.model || 'Android Device' } : prev
+    )
+  }
+
   // Launch animation: brief display then smooth transition to main UI
   useEffect(() => {
-    const fadeTimer = setTimeout(() => setSplashFading(true), 1200)
-    const unmountTimer = setTimeout(() => setIsLaunching(false), 1600)
+    const fadeTimer = setTimeout(() => setSplashFading(true), 1800)
+    const unmountTimer = setTimeout(() => setIsLaunching(false), 2200)
 
     return () => {
       clearTimeout(fadeTimer)
@@ -115,6 +140,7 @@ function App() {
           <ConnectedDevices
             devices={devices}
             onRescan={refreshDevices}
+            onRenameDevice={handleRenameDevice}
             onBrowseFiles={(dev) => {
               setSelectedDevice(dev)
               setScreen('files')
@@ -149,6 +175,12 @@ function App() {
       {isLaunching && (
         <div className={`launch-splash ${splashFading ? 'fade-out' : ''}`}>
           <img src={logo} alt="CableDrop" className="launch-splash-logo" />
+          <span className="launch-splash-title">CABLE DROP</span>
+          <div className="launch-splash-tagline">
+            AirDrop, over a cable.
+            <br />
+            Secure. Fast. Offline.
+          </div>
         </div>
       )}
 
