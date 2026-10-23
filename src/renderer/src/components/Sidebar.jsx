@@ -1,4 +1,4 @@
-// Sidebar — displays detected storage options: Internal Storage, and SD Card if available
+import { folderIcon } from '../assets/icons'
 
 function Sidebar({ volumes = [], currentPath = '/sdcard', onSelectVolume }) {
   // Check if a storage volume is active based on the current path
@@ -20,7 +20,9 @@ function Sidebar({ volumes = [], currentPath = '/sdcard', onSelectVolume }) {
             className={`sidebar-item ${active ? 'active' : ''}`}
             onClick={() => onSelectVolume && onSelectVolume(vol.path)}
           >
-            <span className="sidebar-item-icon">{vol.icon}</span>
+            <span className="sidebar-item-icon">
+              <img src={folderIcon} alt="" style={{ width: 15, height: 15, verticalAlign: 'middle' }} />
+            </span>
             <span>{vol.name}</span>
           </div>
         )

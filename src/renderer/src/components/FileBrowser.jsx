@@ -3,20 +3,21 @@
 
 import { useState, useEffect } from 'react'
 import adb from '../adb'
+import { folderIcon, fileIcon, imageIcon, videoIcon, receiveIcon, receiveLightIcon } from '../assets/icons'
 
 // Map file extensions to clean display kinds and icons
 function getFileInfo(name, isFolder) {
-  if (isFolder) return { type: 'Folder', icon: '📁' }
+  if (isFolder) return { type: 'Folder', icon: folderIcon }
   const ext = (name || '').split('.').pop().toLowerCase()
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext)) return { type: 'Image', icon: '🖼' }
-  if (['mp4', 'mov', 'mkv', 'avi', 'webm'].includes(ext)) return { type: 'Video', icon: '🎬' }
-  if (['mp3', 'm4a', 'flac', 'wav', 'ogg'].includes(ext)) return { type: 'Audio', icon: '🎵' }
-  if (ext === 'pdf') return { type: 'PDF Document', icon: '📄' }
-  if (['txt', 'md', 'json', 'xml'].includes(ext)) return { type: 'Text Document', icon: '📝' }
-  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) return { type: 'Office Document', icon: '📄' }
-  if (ext === 'apk') return { type: 'Android App', icon: '📦' }
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { type: 'Archive', icon: '🗜' }
-  return { type: ext ? `${ext.toUpperCase()} File` : 'File', icon: '📄' }
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext)) return { type: 'Image', icon: imageIcon }
+  if (['mp4', 'mov', 'mkv', 'avi', 'webm'].includes(ext)) return { type: 'Video', icon: videoIcon }
+  if (['mp3', 'm4a', 'flac', 'wav', 'ogg'].includes(ext)) return { type: 'Audio', icon: fileIcon }
+  if (ext === 'pdf') return { type: 'PDF Document', icon: fileIcon }
+  if (['txt', 'md', 'json', 'xml'].includes(ext)) return { type: 'Text Document', icon: fileIcon }
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) return { type: 'Office Document', icon: fileIcon }
+  if (ext === 'apk') return { type: 'Android App', icon: fileIcon }
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { type: 'Archive', icon: fileIcon }
+  return { type: ext ? `${ext.toUpperCase()} File` : 'File', icon: fileIcon }
 }
 
 // Format raw byte sizes into human readable strings (KB, MB, GB)
@@ -335,7 +336,8 @@ function FileBrowser({
                 if (onReceiveFiles) onReceiveFiles(selectedItems)
               }}
             >
-              📥 Save to Mac
+              <img src={receiveLightIcon} alt="" className="btn-icon" />
+              Save to Mac
             </button>
             <button className="btn btn-secondary" onClick={() => setSelected([])}>
               Deselect All
@@ -365,7 +367,7 @@ function FileBrowser({
         </div>
       ) : files.length === 0 ? (
         <div className="filebrowser-message">
-          <span className="filebrowser-message-icon">📂</span>
+          <img src={folderIcon} alt="" style={{ width: 36, height: 36, opacity: 0.7, marginBottom: 8 }} />
           <p className="filebrowser-message-text">This folder is empty</p>
         </div>
       ) : (
@@ -414,7 +416,7 @@ function FileBrowser({
                   </td>
                   <td>
                     <div className="file-name-cell">
-                      <span className="file-icon">{info.icon}</span>
+                      <img src={info.icon} alt="" className="file-row-icon" style={{ marginRight: 8 }} />
                       <span
                         style={{
                           fontWeight: file.isFolder ? 600 : 400,

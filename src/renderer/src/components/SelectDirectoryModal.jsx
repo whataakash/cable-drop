@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import adb from '../adb'
+import { folderIcon, imageIcon, videoIcon, receiveIcon } from '../assets/icons'
 
 function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSelect, onClose }) {
   const [currentPath, setCurrentPath] = useState(initialPath || '/sdcard/Download')
@@ -77,12 +78,11 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
 
   // Common quick shortcuts
   const shortcuts = [
-    { name: '📥 Download', path: '/sdcard/Download' },
-    { name: '📷 DCIM', path: '/sdcard/DCIM' },
-    { name: '📁 Documents', path: '/sdcard/Documents' },
-    { name: '🖼 Pictures', path: '/sdcard/Pictures' },
-    { name: '🎵 Music', path: '/sdcard/Music' },
-    { name: '🎬 Movies', path: '/sdcard/Movies' }
+    { label: 'Download', path: '/sdcard/Download', icon: receiveIcon },
+    { label: 'DCIM', path: '/sdcard/DCIM', icon: imageIcon },
+    { label: 'Documents', path: '/sdcard/Documents', icon: folderIcon },
+    { label: 'Pictures', path: '/sdcard/Pictures', icon: imageIcon },
+    { label: 'Movies', path: '/sdcard/Movies', icon: videoIcon }
   ]
 
   // Add SD Card shortcut if detected
@@ -131,7 +131,8 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
                 className={`directory-shortcut-btn ${currentPath === sc.path ? 'active' : ''}`}
                 onClick={() => loadFolders(sc.path)}
               >
-                {sc.name}
+                <img src={sc.icon} alt="" className="inline-icon" />
+                {sc.label}
               </button>
             ))}
           </div>
@@ -167,7 +168,8 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
               </div>
             ) : folders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)', fontSize: '12px' }}>
-                <div>📁 No subfolders here</div>
+                <img src={folderIcon} alt="" style={{ width: 28, height: 28, opacity: 0.6, marginBottom: 6 }} />
+                <div>No subfolders here</div>
                 <div style={{ marginTop: '4px', opacity: 0.8 }}>
                   Files will be transferred into <strong>{formatDisplayPath(currentPath)}</strong>
                 </div>
@@ -181,7 +183,7 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
                     onClick={() => loadFolders(f.fullPath)}
                     title={`Open ${f.name}`}
                   >
-                    <span>📁</span>
+                    <img src={folderIcon} alt="" className="file-row-icon" />
                     <span style={{ fontWeight: 500 }}>{f.name}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
                       ›

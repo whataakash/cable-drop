@@ -2,6 +2,8 @@
 // Features a high-fidelity vector schematic matching the wireframe architecture:
 // macOS Workstation <--- [USB 3.2] ---> Android Target + Daemon status badge
 
+import { mobileIcon } from '../assets/icons'
+
 function NoDeviceScreen({ devices = [], onRescan }) {
   const unauthorizedDevice = devices.find((d) => d.state === 'unauthorized')
 
@@ -256,7 +258,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
       {/* Unauthorized device banner — appears if a device is plugged in but unauthorized */}
       {unauthorizedDevice && (
         <div className="unauth-banner">
-          <span style={{ fontSize: '24px' }}>📱</span>
+          <img src={mobileIcon} alt="" style={{ width: 28, height: 28 }} />
           <div className="unauth-banner-text">
             <h4>
               Device detected but unauthorized:{' '}
@@ -275,7 +277,8 @@ function NoDeviceScreen({ devices = [], onRescan }) {
             onClick={onRescan}
             style={{ marginLeft: 'auto', flexShrink: 0 }}
           >
-            📱 Re-scan Authorization
+            <img src={mobileIcon} alt="" className="btn-icon" />
+            Re-scan Authorization
           </button>
         </div>
       )}
@@ -298,7 +301,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
         <div className="setup-card">
           <div className="setup-card-header">
             <span className="setup-card-number">02</span>
-            <span>📱</span>
+            <img src={mobileIcon} alt="" style={{ width: 16, height: 16 }} />
           </div>
           <h3>Enable USB Debugging</h3>
           <p>

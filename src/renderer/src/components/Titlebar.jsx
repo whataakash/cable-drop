@@ -3,6 +3,7 @@
 // Center: live connection status pill
 
 import logo from '../assets/logo.png'
+import { sendLightIcon, receiveIcon } from '../assets/icons'
 
 function Titlebar({
   device,
@@ -68,14 +69,16 @@ function Titlebar({
             onClick={onSendFiles}
             disabled={!device}
           >
-            📤 Send to Phone
+            <img src={sendLightIcon} alt="" className="btn-icon" />
+            Send to Phone
           </button>
           <button
             className="btn btn-secondary"
             onClick={onReceiveFiles}
             disabled={!device}
           >
-            📥 Save to Mac
+            <img src={receiveIcon} alt="" className="btn-icon" />
+            Save to Mac
           </button>
         </div>
       </div>

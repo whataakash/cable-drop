@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import adb from '../adb'
 import SelectDirectoryModal from './SelectDirectoryModal'
+import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, sendLightIcon, arrowIcon } from '../assets/icons'
 
 function formatSize(bytes) {
   if (!bytes) return '—'
@@ -11,16 +12,11 @@ function formatSize(bytes) {
 }
 
 function getFileIcon(filename, isDirectory) {
-  if (isDirectory) return '📁'
+  if (isDirectory) return folderIcon
   const ext = (filename || '').split('.').pop().toLowerCase()
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return '🖼'
-  if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return '🎬'
-  if (['mp3', 'flac', 'wav', 'm4a', 'ogg'].includes(ext)) return '🎵'
-  if (ext === 'pdf') return '📄'
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜'
-  if (ext === 'apk') return '📦'
-  if (['json', 'js', 'html', 'css', 'ts', 'xml', 'txt', 'md'].includes(ext)) return '{ }'
-  return '📄'
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return imageIcon
+  if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return videoIcon
+  return fileIcon
 }
 
 function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose, onSuccess }) {
@@ -174,16 +170,22 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div>🖥 Your MacBook</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <img src={macIcon} alt="" className="inline-icon" />
+                <span>Your MacBook</span>
+              </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>(Macintosh HD)</div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <span className="transfer-direction-arrow" style={{ fontSize: '16px' }}>&rarr;</span>
+              <img src={arrowIcon} alt="->" className="transfer-arrow-icon" />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div>📱 {deviceName}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <img src={mobileIcon} alt="" className="inline-icon" />
+                <span>{deviceName}</span>
+              </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 ({storageType})
               </div>
@@ -211,7 +213,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
               >
                 {stagedFiles.length === 0 ? (
                   <>
-                    <div className="drop-zone-icon">📂</div>
+                    <img src={folderIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">Choose files or folders from Mac...</div>
                     <div className="drop-zone-sub text-muted">Click or drag & drop to send</div>
                   </>
@@ -253,7 +255,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
               >
                 {hasChosenDir ? (
                   <>
-                    <div className="drop-zone-icon">📁</div>
+                    <img src={folderIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label" style={{ color: 'var(--status-ok)' }}>
                       ✓ Directory chosen: {folderName}
                     </div>
@@ -263,7 +265,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                   </>
                 ) : (
                   <>
-                    <div className="drop-zone-icon">📱</div>
+                    <img src={mobileIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">Browse folder on Phone...</div>
                     <div className="drop-zone-sub text-muted">Choose destination folder on mobile</div>
                   </>
@@ -315,7 +317,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                   return (
                     <li key={file.path} className="staged-item">
                       <div className="staged-item-left">
-                        <span>{getFileIcon(file.name, file.isDirectory)}</span>
+                        <img src={getFileIcon(file.name, file.isDirectory)} alt="" className="file-row-icon" />
                         <span title={file.path}>{file.name}</span>
                         {file.isDirectory && (
                           <span className="badge" style={{ fontSize: '10px', padding: '1px 5px', opacity: 0.85 }}>FOLDER</span>
@@ -353,7 +355,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
           <div className="target-dir">
             <div className="target-dir-label">TARGET ANDROID DIRECTORY</div>
             <div className="target-dir-row">
-              <span>📁</span>
+              <img src={folderIcon} alt="" className="inline-icon" />
               <span
                 className="target-dir-path"
                 title={targetDir}
@@ -368,7 +370,8 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                   className="btn btn-secondary"
                   onClick={() => setShowPickerModal(true)}
                 >
-                  📁 Browse folders...
+                  <img src={folderIcon} alt="" className="btn-icon" />
+                  Browse folders...
                 </button>
               )}
             </div>
@@ -415,7 +418,8 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                 onClick={handleStartPush}
                 disabled={stagedFiles.length === 0 || transferring}
               >
-                {transferring ? 'Pushing to Mobile...' : '▶ Send to Mobile'}
+                <img src={sendLightIcon} alt="" className="btn-icon" />
+                {transferring ? 'Pushing to Mobile...' : 'Send to Mobile'}
               </button>
             ) : (
               <button className="btn btn-primary" onClick={onClose}>

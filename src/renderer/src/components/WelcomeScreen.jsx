@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
+import { macIcon, mobileIcon } from '../assets/icons'
 
 function WelcomeScreen({ onInitComplete }) {
   const [progress, setProgress] = useState(0)
@@ -35,7 +36,9 @@ function WelcomeScreen({ onInitComplete }) {
       {/* connection diagram: Mac <----> Android */}
       <div className="welcome-diagram">
         <div className="welcome-diagram-node">
-          <div className="welcome-diagram-node-icon">🖥</div>
+          <div className="welcome-diagram-node-icon">
+            <img src={macIcon} alt="" style={{ width: 32, height: 32 }} />
+          </div>
           <strong>macOS Host</strong>
           <div className="text-muted text-sm">darwin-arm64</div>
         </div>
@@ -44,7 +47,9 @@ function WelcomeScreen({ onInitComplete }) {
           ⇄ libusb transport pipe
         </div>
         <div className="welcome-diagram-node">
-          <div className="welcome-diagram-node-icon">📱</div>
+          <div className="welcome-diagram-node-icon">
+            <img src={mobileIcon} alt="" style={{ width: 32, height: 32 }} />
+          </div>
           <strong>Android Target</strong>
           <div className="text-muted text-sm">ADB Polling...</div>
         </div>

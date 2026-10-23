@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import adb from '../adb'
+import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, receiveLightIcon, arrowIcon } from '../assets/icons'
 
 function formatSize(bytes) {
   if (!bytes) return '—'
@@ -13,16 +14,11 @@ function formatSize(bytes) {
 }
 
 function getFileIcon(filename, isFolder) {
-  if (isFolder) return '📁'
+  if (isFolder) return folderIcon
   const ext = (filename || '').split('.').pop().toLowerCase()
-  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return '🖼'
-  if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return '🎬'
-  if (['mp3', 'flac', 'wav', 'm4a', 'ogg'].includes(ext)) return '🎵'
-  if (ext === 'pdf') return '📄'
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜'
-  if (ext === 'apk') return '📦'
-  if (['json', 'js', 'html', 'css', 'ts', 'xml', 'txt', 'md'].includes(ext)) return '{ }'
-  return '📄'
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return imageIcon
+  if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return videoIcon
+  return fileIcon
 }
 
 function ReceiveFilesModal({ device, files = [], onClose }) {
@@ -192,18 +188,24 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div>📱 {deviceName}</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <img src={mobileIcon} alt="" className="inline-icon" />
+                <span>{deviceName}</span>
+              </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 ({storageType})
               </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <span className="transfer-direction-arrow" style={{ fontSize: '16px' }}>&rarr;</span>
+              <img src={arrowIcon} alt="->" className="transfer-arrow-icon" />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div>🖥 Your MacBook</div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <img src={macIcon} alt="" className="inline-icon" />
+                <span>Your MacBook</span>
+              </div>
               <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>(Macintosh HD)</div>
             </div>
 
@@ -224,7 +226,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
               >
                 {stagedFiles.length === 0 ? (
                   <>
-                    <div className="drop-zone-icon">📱</div>
+                    <img src={mobileIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">No files selected from Mobile</div>
                     <div className="drop-zone-sub text-muted">Select files in browser to pull</div>
                   </>
@@ -264,7 +266,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
               >
                 {saveLocation ? (
                   <>
-                    <div className="drop-zone-icon">📁</div>
+                    <img src={folderIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label" style={{ color: 'var(--status-ok)' }}>
                       ✓ Save folder: {macFolderName}
                     </div>
@@ -274,7 +276,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
                   </>
                 ) : (
                   <>
-                    <div className="drop-zone-icon">🖥</div>
+                    <img src={macIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">Choose folder on Mac...</div>
                     <div className="drop-zone-sub text-muted">Select destination directory</div>
                   </>
@@ -326,7 +328,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
                   return (
                     <li key={key} className="staged-item">
                       <div className="staged-item-left">
-                        <span>{getFileIcon(file.name, isFolder)}</span>
+                        <img src={getFileIcon(file.name, isFolder)} alt="" className="file-row-icon" />
                         <span title={key}>{file.name}</span>
                         {isFolder && (
                           <span className="badge" style={{ fontSize: '10px', padding: '1px 5px', opacity: 0.85 }}>FOLDER</span>
@@ -366,7 +368,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
           <div className="target-dir">
             <div className="target-dir-label">SAVE LOCATION ON MAC</div>
             <div className="target-dir-row">
-              <span>📁</span>
+              <img src={folderIcon} alt="" className="inline-icon" />
               <span
                 className="target-dir-path"
                 title={saveLocation}
@@ -381,7 +383,8 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
                   className="btn btn-secondary"
                   onClick={handleChooseFolder}
                 >
-                  📁 Choose folder on Mac...
+                  <img src={folderIcon} alt="" className="btn-icon" />
+                  Choose folder on Mac...
                 </button>
               )}
             </div>
@@ -435,7 +438,8 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
                 onClick={handleStartPull}
                 disabled={stagedFiles.length === 0 || transferring}
               >
-                {transferring ? 'Receiving from Mobile...' : '▶ Receive to Mac'}
+                <img src={receiveLightIcon} alt="" className="btn-icon" />
+                {transferring ? 'Receiving from Mobile...' : 'Receive to Mac'}
               </button>
             ) : (
               <button className="btn btn-primary" onClick={onClose}>

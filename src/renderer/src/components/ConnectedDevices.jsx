@@ -2,6 +2,7 @@
 // Allows renaming device nicknames and navigating to file browser
 
 import { useState } from 'react'
+import { mobileIcon, folderLightIcon } from '../assets/icons'
 
 function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevice }) {
   // State for inline device renaming
@@ -52,7 +53,9 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
           <div key={device.id} className="device-card">
             <div className="device-card-top">
               <div className="device-card-info">
-                <div className="device-card-icon">📱</div>
+                <div className="device-card-icon">
+                  <img src={mobileIcon} alt="" style={{ width: 28, height: 28 }} />
+                </div>
                 <div>
                   <div className="device-card-name">
                     {isEditing ? (
@@ -125,8 +128,9 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
             {/* action buttons */}
             <div className="device-card-actions">
               {isAuthorized ? (
-                <button className="btn btn-primary" onClick={() => onBrowseFiles && onBrowseFiles(device)}>
-                  📂 Browse Files
+                <button className="btn btn-primary btn-lg" onClick={() => onBrowseFiles && onBrowseFiles(device)}>
+                  <img src={folderLightIcon} alt="" className="btn-icon" />
+                  Browse Files
                 </button>
               ) : (
                 <button className="btn btn-secondary" onClick={onRescan}>
