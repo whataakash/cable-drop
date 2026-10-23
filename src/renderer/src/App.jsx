@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 
 import Titlebar from './components/Titlebar'
+import Sidebar from './components/Sidebar'
 import StatusBar from './components/StatusBar'
 import WelcomeScreen from './components/WelcomeScreen'
 import NoDeviceScreen from './components/NoDeviceScreen'
@@ -28,9 +29,14 @@ function App() {
   // Selected folder path in file browser
   const [browserPath, setBrowserPath] = useState('/sdcard')
 
+  // Detected storage volumes tracked individually per device: { [deviceId]: volumeList }
+  const [deviceVolumes, setDeviceVolumes] = useState({})
+
   // Modals
   const [showSendModal, setShowSendModal] = useState(false)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
+  const [sendTargetDir, setSendTargetDir] = useState('/sdcard/Download')
+  const [receiveFilesList, setReceiveFilesList] = useState([])
 
   // Real ADB state
   const [devices, setDevices] = useState([])
@@ -54,15 +60,34 @@ function App() {
       const authorized = listWithNames.find((d) => d.state === 'device')
       if (authorized) {
         setSelectedDevice((prev) => (prev ? listWithNames.find((d) => d.id === prev.id) || authorized : authorized))
-      } else if (listWithNames.length > 0) {
-        setSelectedDevice(listWithNames[0])
+
+        // Query each authorized device's storage volumes individually
+        listWithNames
+          .filter((d) => d.state === 'device')
+          .forEach((dev) => {
+            adb.getStorageVolumes(dev.id)
+              .then((vols) => {
+                if (vols && vols.length > 0) {
+                  setDeviceVolumes((prev) => ({ ...prev, [dev.id]: vols }))
+                }
+              })
+              .catch(() => {})
+          })
       } else {
         setSelectedDevice(null)
+        setDeviceVolumes({})
+        setScreen('no-device')
+        setActiveTab('devices')
       }
 
       return listWithNames
     } catch (err) {
       console.error('Failed to query ADB devices:', err)
+      setDevices([])
+      setSelectedDevice(null)
+      setDeviceVolumes({})
+      setScreen('no-device')
+      setActiveTab('devices')
       return []
     }
   }
@@ -110,10 +135,10 @@ function App() {
 
     refreshDevices()
 
-    // Poll every 2.5 seconds to detect device plug/unplug automatically
+    // Poll every 1 second to detect device plug/unplug immediately
     const timer = setInterval(() => {
       refreshDevices()
-    }, 2500)
+    }, 1000)
 
     return () => clearInterval(timer)
   }, [])
@@ -122,9 +147,11 @@ function App() {
   useEffect(() => {
     const hasAuthorizedDevice = devices.some((d) => d.state === 'device')
 
-    if (screen === 'devices' && !hasAuthorizedDevice) {
-      setScreen('no-device')
-      setActiveTab('devices')
+    if (!hasAuthorizedDevice) {
+      if (screen !== 'no-device') {
+        setScreen('no-device')
+        setActiveTab('devices')
+      }
     } else if (screen === 'no-device' && hasAuthorizedDevice) {
       setScreen('devices')
       setActiveTab('devices')
@@ -133,6 +160,28 @@ function App() {
 
   const authorizedDevices = devices.filter((d) => d.state === 'device')
   const activeDevice = selectedDevice || authorizedDevices[0] || null
+  const hasAuthorized = authorizedDevices.length > 0
+  const showSidebar = hasAuthorized && screen === 'files'
+
+  const defaultVolumes = [
+    { id: 'internal', name: 'Internal Storage', path: '/sdcard', type: 'internal', icon: '💾' }
+  ]
+  const currentVolumes = (activeDevice?.id && deviceVolumes[activeDevice.id]) || defaultVolumes
+
+  // Query active device storage volumes when selected device changes
+  useEffect(() => {
+    if (activeDevice?.id && activeDevice.state === 'device') {
+      adb.getStorageVolumes(activeDevice.id)
+        .then((vols) => {
+          if (vols && vols.length > 0) {
+            setDeviceVolumes((prev) => ({ ...prev, [activeDevice.id]: vols }))
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not query storage volumes:', err)
+        })
+    }
+  }, [activeDevice?.id, activeDevice?.state])
 
   // Render main screen area
   function renderContent() {
@@ -161,8 +210,15 @@ function App() {
             devices={authorizedDevices}
             onSelectDevice={handleSelectDevice}
             initialPath={browserPath}
-            onSendFiles={() => setShowSendModal(true)}
-            onReceiveFiles={() => setShowReceiveModal(true)}
+            onPathChange={(path) => setBrowserPath(path)}
+            onSendFiles={(path) => {
+              setSendTargetDir(path || browserPath || '/sdcard/Download')
+              setShowSendModal(true)
+            }}
+            onReceiveFiles={(items) => {
+              setReceiveFilesList(items || [])
+              setShowReceiveModal(true)
+            }}
           />
         )
       default:
@@ -177,7 +233,13 @@ function App() {
       const hasAuth = devices.some((d) => d.state === 'device')
       setScreen(hasAuth ? 'devices' : 'no-device')
     } else if (tab === 'files') {
-      setScreen('files')
+      const hasAuth = devices.some((d) => d.state === 'device')
+      if (hasAuth) {
+        setScreen('files')
+      } else {
+        setScreen('no-device')
+        setActiveTab('devices')
+      }
     }
   }
 
@@ -199,6 +261,17 @@ function App() {
       <Titlebar device={activeDevice} currentPage={activeTab} onNavigate={handleNavigate} />
 
       <div className="app-body">
+        {showSidebar && (
+          <Sidebar
+            volumes={currentVolumes}
+            currentPath={browserPath}
+            onSelectVolume={(path) => {
+              setBrowserPath(path)
+              setScreen('files')
+              setActiveTab('files')
+            }}
+          />
+        )}
         <div className="main-content">{renderContent()}</div>
       </div>
 
@@ -207,8 +280,20 @@ function App() {
         deviceCount={authorizedDevices.length}
       />
 
-      {showSendModal && <SendFilesModal onClose={() => setShowSendModal(false)} />}
-      {showReceiveModal && <ReceiveFilesModal onClose={() => setShowReceiveModal(false)} />}
+      {showSendModal && (
+        <SendFilesModal
+          device={activeDevice}
+          targetDirectory={sendTargetDir}
+          onClose={() => setShowSendModal(false)}
+        />
+      )}
+      {showReceiveModal && (
+        <ReceiveFilesModal
+          device={activeDevice}
+          files={receiveFilesList}
+          onClose={() => setShowReceiveModal(false)}
+        />
+      )}
     </div>
   )
 }

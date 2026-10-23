@@ -12,8 +12,13 @@ const adb = {
   killServer: () => ipcRenderer.invoke('adb:killServer'),
   listFiles: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
   listDirectory: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
+  getStorageVolumes: (deviceId) => ipcRenderer.invoke('adb:getStorageVolumes', deviceId),
   pushFile: (deviceId, local, remote) => ipcRenderer.invoke('adb:pushFile', deviceId, local, remote),
   pullFile: (deviceId, remote, local) => ipcRenderer.invoke('adb:pullFile', deviceId, remote, local),
+  openFiles: () => ipcRenderer.invoke('dialog:openFiles'),
+  openDirectory: (defaultPath) => ipcRenderer.invoke('dialog:openDirectory', defaultPath),
+  openPath: (folderPath) => ipcRenderer.invoke('shell:openPath', folderPath),
+  getDefaultDownloads: () => ipcRenderer.invoke('system:getDefaultDownloads'),
   raw: (args) => ipcRenderer.invoke('adb:raw', args)
 }
 

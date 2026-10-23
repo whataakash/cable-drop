@@ -2,9 +2,9 @@
 // Uses the adb binary shipped inside build/platform-tools/adb.
 // Uses Node child_process.spawn() to execute commands.
 
-import { app, ipcMain } from 'electron'
-import { join } from 'path'
-import { existsSync, chmodSync } from 'fs'
+import { app, ipcMain, dialog, shell } from 'electron'
+import { join, basename } from 'path'
+import { existsSync, chmodSync, statSync, mkdirSync } from 'fs'
 import { spawn } from 'child_process'
 
 // Locate the bundled ADB executable
@@ -208,10 +208,10 @@ export function runAdbDevice(deviceId, shellArgs = []) {
       if (combined.includes('device not found') || stderr.includes('device not found') || (code !== 0 && combined.includes('not found') && !stdout.trim())) {
         return reject(new Error(`Device "${deviceId}" not found or disconnected.`))
       }
-      if (code !== 0 && !stdout.trim()) {
-        return reject(new Error(stderr.trim() || `Command failed with code ${code}`))
+      if (code !== 0) {
+        return reject(new Error(stderr.trim() || stdout.trim() || `Command failed with code ${code}`))
       }
-      resolve(stdout.trim())
+      resolve(stdout.trim() || stderr.trim())
     })
   })
 }
@@ -338,6 +338,104 @@ export async function listDirectory(deviceId, remotePath = '/sdcard') {
   return files
 }
 
+// 6. Detect storage volumes on the mobile (Internal Storage + external SD cards)
+export async function getStorageVolumes(deviceId) {
+  const volumes = [
+    {
+      id: 'internal',
+      name: 'Internal Storage',
+      path: '/sdcard',
+      type: 'internal',
+      icon: '💾'
+    }
+  ]
+
+  if (!deviceId || typeof deviceId !== 'string') {
+    return volumes
+  }
+
+  const foundIds = new Set()
+
+  // 1. Try listing /storage
+  try {
+    const output = await runAdbDevice(deviceId, ['shell', 'ls', '-1', '/storage'])
+    const lines = output.split('\n')
+    for (const rawLine of lines) {
+      const name = rawLine.trim()
+      if (!name || name.startsWith('.') || name === 'emulated' || name === 'self') {
+        continue
+      }
+      foundIds.add(name)
+    }
+  } catch (err) {
+    console.warn('ls /storage check:', err.message)
+  }
+
+  // 2. Try sm list-volumes public (Android Storage Manager official command)
+  try {
+    const smOutput = await runAdbDevice(deviceId, ['shell', 'sm', 'list-volumes', 'public'])
+    const matches = smOutput.matchAll(/mounted\s+([a-zA-Z0-9_-]+)/g)
+    for (const match of matches) {
+      if (match[1]) {
+        foundIds.add(match[1])
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 3. Fallback: check /proc/mounts for any /storage/<id> mount
+  try {
+    const mountsOutput = await runAdbDevice(deviceId, ['shell', 'cat', '/proc/mounts'])
+    const matches = mountsOutput.matchAll(/\/storage\/([a-zA-Z0-9_-]+)/g)
+    for (const match of matches) {
+      const name = match[1]
+      if (name && name !== 'emulated' && name !== 'self') {
+        foundIds.add(name)
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // Add all detected external SD cards
+  for (const id of foundIds) {
+    volumes.push({
+      id,
+      name: 'SD Card',
+      path: `/storage/${id}`,
+      type: 'sdcard',
+      icon: '💳'
+    })
+  }
+
+  return volumes
+}
+
+// 7. Push file from local computer to Android device using adb push
+export async function pushFile(deviceId, localPath, remotePath) {
+  if (!deviceId || !localPath || !remotePath) {
+    throw new Error('Missing parameters for adb push')
+  }
+  return await runAdbDevice(deviceId, ['push', localPath, remotePath])
+}
+
+// 8. Pull file from Android device to local computer using adb pull
+export async function pullFile(deviceId, remotePath, localPath) {
+  if (!deviceId || !remotePath || !localPath) {
+    throw new Error('Missing parameters for adb pull')
+  }
+  // Ensure target folder exists on Mac
+  if (!existsSync(localPath)) {
+    try {
+      mkdirSync(localPath, { recursive: true })
+    } catch {
+      // ignore
+    }
+  }
+  return await runAdbDevice(deviceId, ['pull', remotePath, localPath])
+}
+
 // Register IPC handlers for Electron
 export function setupAdbIpc() {
   ipcMain.handle('adb:getPath', () => getAdbPath())
@@ -347,5 +445,53 @@ export function setupAdbIpc() {
   ipcMain.handle('adb:killServer', () => killAdbServer())
   ipcMain.handle('adb:listFiles', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:listDirectory', (_, deviceId, path) => listDirectory(deviceId, path))
+  ipcMain.handle('adb:getStorageVolumes', (_, deviceId) => getStorageVolumes(deviceId))
+  ipcMain.handle('adb:pushFile', (_, deviceId, localPath, remotePath) => pushFile(deviceId, localPath, remotePath))
+  ipcMain.handle('adb:pullFile', (_, deviceId, remotePath, localPath) => pullFile(deviceId, remotePath, localPath))
   ipcMain.handle('adb:raw', (_, args) => runAdb(args))
+
+  // Native macOS dialog and shell handlers
+  ipcMain.handle('dialog:openFiles', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Files to Send to Android',
+      properties: ['openFile', 'multiSelections']
+    })
+    if (result.canceled || !result.filePaths.length) return []
+    return result.filePaths.map((filePath) => {
+      try {
+        const stats = statSync(filePath)
+        return {
+          path: filePath,
+          name: basename(filePath),
+          size: stats.size
+        }
+      } catch {
+        return {
+          path: filePath,
+          name: basename(filePath),
+          size: 0
+        }
+      }
+    })
+  })
+
+  ipcMain.handle('dialog:openDirectory', async (_, defaultPath) => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Save Location on Mac',
+      defaultPath: defaultPath || app.getPath('downloads'),
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || !result.filePaths.length) return null
+    return result.filePaths[0]
+  })
+
+  ipcMain.handle('shell:openPath', async (_, folderPath) => {
+    if (folderPath) {
+      shell.openPath(folderPath)
+    }
+  })
+
+  ipcMain.handle('system:getDefaultDownloads', () => {
+    return app.getPath('downloads')
+  })
 }

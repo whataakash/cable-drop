@@ -79,6 +79,7 @@ function FileBrowser({
   devices = [],
   onSelectDevice,
   initialPath = '/sdcard',
+  onPathChange,
   onSendFiles,
   onReceiveFiles
 }) {
@@ -109,6 +110,7 @@ function FileBrowser({
       const result = await adb.listFiles(device.id, path)
       setFiles(result || [])
       setCurrentPath(path)
+      onPathChange?.(path)
 
       if (addToHistory) {
         setNavHistory((prev) => {
@@ -136,13 +138,21 @@ function FileBrowser({
   // Reload whenever the selected device changes
   useEffect(() => {
     if (device && device.id) {
+      const startPath = initialPath || '/sdcard'
       setNavHistory({
-        entries: ['/sdcard'],
+        entries: [startPath],
         index: 0
       })
-      loadDirectory('/sdcard', false)
+      loadDirectory(startPath, false)
     }
   }, [device?.id])
+
+  // Navigate when initialPath changes from outside (e.g. clicking SD Card on the sidebar)
+  useEffect(() => {
+    if (initialPath && initialPath !== currentPath) {
+      loadDirectory(initialPath, true)
+    }
+  }, [initialPath])
 
   // Navigate into a folder
   function handleOpenFolder(folder) {
@@ -151,10 +161,22 @@ function FileBrowser({
     }
   }
 
+  // Determine if current path belongs to an external SD Card or Internal Storage
+  const isExternalSd = currentPath.startsWith('/storage/') && !currentPath.startsWith('/storage/emulated')
+  let volumeRoot = '/sdcard'
+  let volumeName = 'Internal Storage'
+  if (isExternalSd) {
+    const parts = currentPath.split('/').filter(Boolean)
+    if (parts.length >= 2) {
+      volumeRoot = `/storage/${parts[1]}`
+      volumeName = 'SD Card'
+    }
+  }
+
   // Back and Forward conditions matching Windows File Explorer
   const canGoBack = navHistory.index > 0
   const canGoForward = navHistory.index < navHistory.entries.length - 1
-  const canGoUp = currentPath !== '/' && currentPath !== '/sdcard'
+  const canGoUp = currentPath !== volumeRoot && currentPath !== '/'
 
   // Navigate Back in history (like Windows File Explorer Back button)
   function handleGoBack() {
@@ -181,7 +203,7 @@ function FileBrowser({
     parts.pop()
     const parentPath = '/' + parts.join('/')
     // In Windows File Explorer, pressing Up navigates to parent and adds to history
-    loadDirectory(parentPath || '/sdcard', true)
+    loadDirectory(parentPath || volumeRoot, true)
   }
 
   // Windows File Explorer keyboard shortcuts (Alt+Left for Back, Alt+Right for Forward, Alt+Up for Up)
@@ -221,38 +243,13 @@ function FileBrowser({
     }
   }
 
-  // Helper to abstract Android system paths (e.g. sdcard -> Internal Storage)
-  function formatSegmentName(segment) {
-    if (segment === 'sdcard' || segment === 'emulated') {
-      return 'Internal Storage'
-    }
-    return segment
-  }
-
-  // Build breadcrumb segments from currentPath
+  // Build breadcrumb segments with clean volume root (Internal Storage / SD Card)
   function renderBreadcrumbs() {
-    const parts = currentPath.split('/').filter(Boolean)
-    const segments = []
-    let accumulated = ''
-
-    for (let i = 0; i < parts.length; i++) {
-      accumulated += '/' + parts[i]
-      const pathForSegment = accumulated
-      const isLast = i === parts.length - 1
-      const displayName = formatSegmentName(parts[i])
-
-      segments.push(
-        <span key={pathForSegment} style={{ display: 'inline-flex', alignItems: 'center' }}>
-          {i > 0 && <span className="breadcrumb-sep">/</span>}
-          <span
-            className={`breadcrumb-segment ${isLast ? 'current' : ''}`}
-            onClick={() => !isLast && loadDirectory(pathForSegment, true)}
-          >
-            {displayName}
-          </span>
-        </span>
-      )
-    }
+    const relPath = currentPath.startsWith(volumeRoot)
+      ? currentPath.slice(volumeRoot.length)
+      : currentPath
+    const subParts = relPath.split('/').filter(Boolean)
+    let accumulated = volumeRoot
 
     return (
       <div className="breadcrumb">
@@ -265,7 +262,33 @@ function FileBrowser({
           ↑ ..
         </span>
         <span className="breadcrumb-sep">/</span>
-        {segments}
+
+        {/* Root volume segment */}
+        <span
+          className={`breadcrumb-segment ${subParts.length === 0 ? 'current' : ''}`}
+          onClick={() => subParts.length > 0 && loadDirectory(volumeRoot, true)}
+        >
+          {volumeName}
+        </span>
+
+        {/* Sub-directories */}
+        {subParts.map((part, idx) => {
+          accumulated += '/' + part
+          const targetPath = accumulated
+          const isLast = idx === subParts.length - 1
+
+          return (
+            <span key={targetPath} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <span className="breadcrumb-sep">/</span>
+              <span
+                className={`breadcrumb-segment ${isLast ? 'current' : ''}`}
+                onClick={() => !isLast && loadDirectory(targetPath, true)}
+              >
+                {part}
+              </span>
+            </span>
+          )
+        })}
       </div>
     )
   }
@@ -300,9 +323,9 @@ function FileBrowser({
         </button>
         <button
           className="btn btn-secondary"
-          onClick={() => loadDirectory('/sdcard', true)}
-          disabled={currentPath === '/sdcard'}
-          title="Home (Internal Storage)"
+          onClick={() => loadDirectory(volumeRoot, true)}
+          disabled={currentPath === volumeRoot}
+          title={`Home (${volumeName})`}
         >
           ⌂ Home
         </button>
@@ -316,12 +339,15 @@ function FileBrowser({
 
         {/* Right-aligned action buttons */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button className="btn btn-primary" onClick={onSendFiles}>
+          <button className="btn btn-primary" onClick={() => onSendFiles && onSendFiles(currentPath)}>
             📤 Send to Phone
           </button>
           <button
             className="btn btn-secondary"
-            onClick={onReceiveFiles}
+            onClick={() => {
+              const selectedItems = files.filter((f) => selected.includes(f.fullPath))
+              if (onReceiveFiles) onReceiveFiles(selectedItems)
+            }}
             disabled={selected.length === 0}
           >
             📥 Save to Mac
