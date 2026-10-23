@@ -28,7 +28,7 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
   }
 
   return (
-    <div>
+    <div className="connected-devices">
       {/* page header */}
       <div className="devices-header">
         <h2>
@@ -41,10 +41,6 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
           <button className="btn btn-secondary" onClick={onRescan}>Re-Scan</button>
         </div>
       </div>
-
-      <p className="devices-header-sub">
-        Manage local USB endpoints connected via ADB daemon.
-      </p>
 
       {/* list of detected devices */}
       {devices.map((device) => {
@@ -130,7 +126,7 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
             <div className="device-card-actions">
               {isAuthorized ? (
                 <button className="btn btn-primary" onClick={() => onBrowseFiles && onBrowseFiles(device)}>
-                  📂 Browse Files ⌘B
+                  📂 Browse Files
                 </button>
               ) : (
                 <button className="btn btn-secondary" onClick={onRescan}>

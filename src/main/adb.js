@@ -453,8 +453,35 @@ export function setupAdbIpc() {
   // Native macOS dialog and shell handlers
   ipcMain.handle('dialog:openFiles', async () => {
     const result = await dialog.showOpenDialog({
-      title: 'Select Files to Send to Android',
-      properties: ['openFile', 'multiSelections']
+      title: 'Select Files or Folders to Send to Android',
+      properties: ['openFile', 'openDirectory', 'multiSelections']
+    })
+    if (result.canceled || !result.filePaths.length) return []
+    return result.filePaths.map((filePath) => {
+      try {
+        const stats = statSync(filePath)
+        const isDirectory = stats.isDirectory()
+        return {
+          path: filePath,
+          name: basename(filePath),
+          size: isDirectory ? 0 : stats.size,
+          isDirectory
+        }
+      } catch {
+        return {
+          path: filePath,
+          name: basename(filePath),
+          size: 0,
+          isDirectory: false
+        }
+      }
+    })
+  })
+
+  ipcMain.handle('dialog:openFolders', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Select Folder to Send to Android',
+      properties: ['openDirectory', 'multiSelections']
     })
     if (result.canceled || !result.filePaths.length) return []
     return result.filePaths.map((filePath) => {
@@ -463,13 +490,15 @@ export function setupAdbIpc() {
         return {
           path: filePath,
           name: basename(filePath),
-          size: stats.size
+          size: 0,
+          isDirectory: true
         }
       } catch {
         return {
           path: filePath,
           name: basename(filePath),
-          size: 0
+          size: 0,
+          isDirectory: true
         }
       }
     })

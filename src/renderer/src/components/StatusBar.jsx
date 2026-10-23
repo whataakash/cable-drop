@@ -1,6 +1,6 @@
 // StatusBar — bottom bar showing ADB daemon info and transport stats
 
-function StatusBar({ daemonVersion, transport, deviceCount }) {
+function StatusBar({ daemonVersion, deviceCount }) {
   return (
     <div className="statusbar">
       <div className="statusbar-item">

@@ -3,25 +3,22 @@ import adb from '../adb'
 import SelectDirectoryModal from './SelectDirectoryModal'
 
 function formatSize(bytes) {
-  if (!bytes || bytes === 0) return '—'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let s = bytes
-  let idx = 0
-  while (s >= 1024 && idx < units.length - 1) {
-    s /= 1024
-    idx++
-  }
-  return `${s.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
+  if (!bytes) return '—'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 }
 
-function getFileIcon(filename) {
-  const ext = (filename || '').split('.').pop()?.toLowerCase()
+function getFileIcon(filename, isDirectory) {
+  if (isDirectory) return '📁'
+  const ext = (filename || '').split('.').pop().toLowerCase()
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return '🖼'
   if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return '🎬'
   if (['mp3', 'flac', 'wav', 'm4a', 'ogg'].includes(ext)) return '🎵'
-  if (['pdf'].includes(ext)) return '📄'
+  if (ext === 'pdf') return '📄'
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜'
-  if (['apk'].includes(ext)) return '📦'
+  if (ext === 'apk') return '📦'
   if (['json', 'js', 'html', 'css', 'ts', 'xml', 'txt', 'md'].includes(ext)) return '{ }'
   return '📄'
 }
@@ -29,6 +26,7 @@ function getFileIcon(filename) {
 function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose, onSuccess }) {
   const [stagedFiles, setStagedFiles] = useState([])
   const [targetDir, setTargetDir] = useState(targetDirectory || '/sdcard/Download')
+  const [hasChosenDir, setHasChosenDir] = useState(Boolean(targetDirectory))
   const [showPickerModal, setShowPickerModal] = useState(false)
 
   // Transfer execution states
@@ -43,7 +41,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
   const deviceName = device?.name || device?.model || 'Android Device'
 
-  // Pick files using native macOS Finder file sheet
+  // Pick files or folders using native macOS Finder sheet
   async function handleChooseFiles() {
     try {
       const files = await adb.openFiles()
@@ -116,7 +114,8 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         setCurrentIndex(i)
         setCurrentFileName(file.name)
         setFileStatuses((prev) => ({ ...prev, [file.path]: 'inFlight' }))
-        setTransferStatsText(`Pushing file ${i + 1} of ${total}: ${file.name}`)
+        const itemType = file.isDirectory ? 'folder' : 'file'
+        setTransferStatsText(`Pushing ${itemType} ${i + 1} of ${total}: ${file.name}`)
         setProgressPercent(Math.round((i / total) * 100))
 
         const output = await adb.pushFile(device.id, file.path, targetDir)
@@ -128,7 +127,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
       setProgressPercent(100)
       setCompleted(true)
-      setTransferStatsText(`All ${total} files pushed successfully!`)
+      setTransferStatsText(`All ${total} items pushed successfully!`)
       if (onSuccess) onSuccess()
     } catch (err) {
       console.error('Push error:', err)
@@ -139,10 +138,17 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
     }
   }
 
+  // Storage type (Internal Storage vs SD Card)
+  const isSdCard = targetDir.startsWith('/storage/') && !targetDir.startsWith('/storage/emulated')
+  const storageType = isSdCard ? 'SD Card' : 'Internal Storage'
+
   // Friendly display for target folder (e.g. Internal Storage/Download)
   const displayTarget = targetDir.startsWith('/sdcard')
     ? 'Internal Storage' + targetDir.slice(7)
     : targetDir
+
+  const folderParts = targetDir.split('/').filter(Boolean)
+  const folderName = folderParts.length > 0 ? folderParts[folderParts.length - 1] : 'Internal Storage'
 
   return (
     <div className="modal-overlay" onClick={transferring ? undefined : onClose}>
@@ -150,53 +156,142 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         {/* header */}
         <div className="modal-header">
           <div>
-            <h3>Send files to Android</h3>
-            <p>ADB High-Speed Direct USB Pipe Mode</p>
+            <h3>Send files to Mobile</h3>
+            <p>using your Type C Cable</p>
           </div>
           <button className="modal-close" onClick={onClose} disabled={transferring}>✕</button>
         </div>
 
         <div className="modal-body">
           {/* transfer direction */}
-          <div className="transfer-direction">
-            <span>🖥 Mac Workstation (Local Finder)</span>
-            <span className="transfer-direction-arrow">→</span>
-            <span>📱 {deviceName} ({displayTarget})</span>
-            <span className={`badge ${completed ? 'ok' : 'ok'}`} style={{ marginLeft: 'auto' }}>
-              {completed ? 'COMPLETED' : transferring ? 'SENDING' : 'READY'}
-            </span>
+          <div
+            className="transfer-direction"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              alignItems: 'center',
+              width: '100%'
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <div>🖥 Your MacBook</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px' }}>(Macintosh HD)</div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <span className="transfer-direction-arrow" style={{ fontSize: '16px' }}>&rarr;</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <div>📱 {deviceName}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '11px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                ({storageType})
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <span className={`badge ${completed ? 'ok' : 'ok'}`}>
+                {completed ? 'COMPLETED' : transferring ? 'SENDING' : 'READY'}
+              </span>
+            </div>
           </div>
 
-          {/* drop zones for adding files */}
-          <div style={{ display: 'flex', gap: 'var(--space-md)' }}>
-            <div
-              className="drop-zone"
-              style={{ flex: 1, cursor: transferring ? 'not-allowed' : 'pointer' }}
-              onClick={transferring ? undefined : handleChooseFiles}
-            >
-              <div className="drop-zone-icon">📂</div>
-              <div className="drop-zone-label">Choose files from Mac...</div>
-              <div className="drop-zone-sub text-muted">Opens native Finder sheet</div>
+          {/* drop zones for adding files & selecting destination */}
+          <div style={{ display: 'flex', gap: 'var(--space-md)', width: '100%' }}>
+            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div
+                className={`drop-zone ${stagedFiles.length > 0 ? 'selected' : ''}`}
+                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                onDrop={handleDrop}
+                onClick={transferring ? undefined : handleChooseFiles}
+              >
+                {stagedFiles.length === 0 ? (
+                  <>
+                    <div className="drop-zone-icon">📂</div>
+                    <div className="drop-zone-label">Choose files or folders from Mac...</div>
+                    <div className="drop-zone-sub text-muted">Click or drag & drop to send</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="drop-zone-icon">✓</div>
+                    <div className="drop-zone-label" style={{ color: 'var(--status-ok)' }}>
+                      ✓ {stagedFiles.length} {stagedFiles.length === 1 ? 'item' : 'items'} chosen
+                    </div>
+                    <div className="drop-zone-sub text-muted">Click to choose more</div>
+                  </>
+                )}
+              </div>
+              <div style={{ height: '24px', display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                {stagedFiles.length > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ height: '22px', fontSize: '11px', padding: '0 8px' }}
+                    onClick={handleClearAll}
+                    disabled={transferring}
+                  >
+                    Clear files
+                  </button>
+                )}
+              </div>
             </div>
-            <div
-              className="drop-zone"
-              style={{ flex: 1 }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onDrop={handleDrop}
-            >
-              <div className="drop-zone-icon">📤</div>
-              <div className="drop-zone-label">Drop files or directories anywhere</div>
-              <div className="drop-zone-sub text-muted">Queues immediately for batch ADB streaming</div>
+
+            <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div
+                className={`drop-zone ${hasChosenDir ? 'selected' : ''}`}
+                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                }}
+                onDrop={handleDrop}
+                onClick={transferring ? undefined : () => setShowPickerModal(true)}
+              >
+                {hasChosenDir ? (
+                  <>
+                    <div className="drop-zone-icon">📁</div>
+                    <div className="drop-zone-label" style={{ color: 'var(--status-ok)' }}>
+                      ✓ Directory chosen: {folderName}
+                    </div>
+                    <div className="drop-zone-sub text-muted" title={displayTarget}>
+                      {displayTarget} · Click to change
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="drop-zone-icon">📱</div>
+                    <div className="drop-zone-label">Browse folder on Phone...</div>
+                    <div className="drop-zone-sub text-muted">Choose destination folder on mobile</div>
+                  </>
+                )}
+              </div>
+              <div style={{ height: '24px', display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                {hasChosenDir && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ height: '22px', fontSize: '11px', padding: '0 8px' }}
+                    onClick={() => {
+                      setHasChosenDir(false)
+                      setTargetDir('/sdcard/Download')
+                    }}
+                    disabled={transferring}
+                  >
+                    Clear folder
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           {/* staged file list */}
           <div>
             <div className="staged-header">
-              <span>STAGED PAYLOAD ({stagedFiles.length} {stagedFiles.length === 1 ? 'FILE' : 'FILES'})</span>
+              <span>STAGED PAYLOAD ({stagedFiles.length} {stagedFiles.length === 1 ? 'ITEM' : 'ITEMS'})</span>
               {stagedFiles.length > 0 && (
                 <button
                   className="btn btn-secondary"
@@ -211,7 +306,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
             {stagedFiles.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                No files staged yet. Click above or drag and drop files from Finder to send.
+                No files or folders staged yet. Choose files/folders above or drag and drop from Finder.
               </div>
             ) : (
               <ul className="staged-list" style={{ maxHeight: '180px', overflowY: 'auto' }}>
@@ -220,8 +315,11 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                   return (
                     <li key={file.path} className="staged-item">
                       <div className="staged-item-left">
-                        <span>{getFileIcon(file.name)}</span>
+                        <span>{getFileIcon(file.name, file.isDirectory)}</span>
                         <span title={file.path}>{file.name}</span>
+                        {file.isDirectory && (
+                          <span className="badge" style={{ fontSize: '10px', padding: '1px 5px', opacity: 0.85 }}>FOLDER</span>
+                        )}
                         {status === 'inFlight' && (
                           <span className="badge" style={{ color: 'var(--violet)' }}>IN FLIGHT</span>
                         )}
@@ -233,12 +331,12 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                         )}
                       </div>
                       <div className="staged-item-right">
-                        <span className="staged-item-size">{formatSize(file.size)}</span>
+                        <span className="staged-item-size">{file.isDirectory ? 'Folder' : formatSize(file.size)}</span>
                         {!transferring && (
                           <button
                             className="staged-item-remove"
                             onClick={() => handleRemoveFile(file.path)}
-                            title="Remove file"
+                            title="Remove item"
                           >
                             ✕
                           </button>
@@ -256,7 +354,14 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
             <div className="target-dir-label">TARGET ANDROID DIRECTORY</div>
             <div className="target-dir-row">
               <span>📁</span>
-              <span className="target-dir-path" title={targetDir}>{displayTarget}</span>
+              <span
+                className="target-dir-path"
+                title={targetDir}
+                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                onClick={transferring ? undefined : () => setShowPickerModal(true)}
+              >
+                {displayTarget}
+              </span>
               {!transferring && (
                 <button
                   type="button"
@@ -271,7 +376,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
           {/* error alert */}
           {errorMsg && (
-            <div style={{ color: 'var(--red)', fontSize: '12px', padding: '8px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }}>
+            <div style={{ color: 'var(--status-error)', fontSize: '12px', padding: '8px', background: 'var(--status-error-bg)', borderRadius: '6px', border: '1px solid var(--status-error)' }}>
               ⚠ {errorMsg}
             </div>
           )}
@@ -282,7 +387,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
               <div className="transfer-progress-label">
                 <span>
                   <span className={`status-dot ${completed ? 'ok' : 'active'}`} />{' '}
-                  {completed ? 'Transfer complete!' : `Pushing file ${currentIndex + 1} of ${stagedFiles.length}: ${currentFileName}`}
+                  {completed ? 'Transfer complete!' : `Pushing ${stagedFiles[currentIndex]?.isDirectory ? 'folder' : 'file'} ${currentIndex + 1} of ${stagedFiles.length}: ${currentFileName}`}
                 </span>
                 <span>{progressPercent}%</span>
               </div>
@@ -299,7 +404,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
         {/* footer */}
         <div className="modal-footer">
-          <span className="text-muted text-sm">🔒 ADB End-to-End Pipe Verified</span>
+          <span className="text-muted text-sm">Powered by Cable-Drop</span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
             <button className="btn btn-secondary" onClick={onClose} disabled={transferring}>
               {completed ? 'Close' : 'Cancel'}
@@ -310,7 +415,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                 onClick={handleStartPush}
                 disabled={stagedFiles.length === 0 || transferring}
               >
-                {transferring ? 'Pushing files...' : '▶ Send files to Phone'}
+                {transferring ? 'Pushing to Mobile...' : '▶ Send to Mobile'}
               </button>
             ) : (
               <button className="btn btn-primary" onClick={onClose}>
@@ -325,7 +430,10 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         <SelectDirectoryModal
           device={device}
           initialPath={targetDir}
-          onSelect={(chosenPath) => setTargetDir(chosenPath)}
+          onSelect={(chosenPath) => {
+            setTargetDir(chosenPath)
+            setHasChosenDir(true)
+          }}
           onClose={() => setShowPickerModal(false)}
         />
       )}

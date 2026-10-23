@@ -5,26 +5,22 @@ import { useState, useEffect } from 'react'
 import adb from '../adb'
 
 function formatSize(bytes) {
-  if (!bytes || bytes === 0) return '—'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let s = bytes
-  let idx = 0
-  while (s >= 1024 && idx < units.length - 1) {
-    s /= 1024
-    idx++
-  }
-  return `${s.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
+  if (!bytes) return '—'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 }
 
 function getFileIcon(filename, isFolder) {
   if (isFolder) return '📁'
-  const ext = (filename || '').split('.').pop()?.toLowerCase()
+  const ext = (filename || '').split('.').pop().toLowerCase()
   if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'].includes(ext)) return '🖼'
   if (['mp4', 'mov', 'mkv', 'avi'].includes(ext)) return '🎬'
   if (['mp3', 'flac', 'wav', 'm4a', 'ogg'].includes(ext)) return '🎵'
-  if (['pdf'].includes(ext)) return '📄'
+  if (ext === 'pdf') return '📄'
   if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return '🗜'
-  if (['apk'].includes(ext)) return '📦'
+  if (ext === 'apk') return '📦'
   if (['json', 'js', 'html', 'css', 'ts', 'xml', 'txt', 'md'].includes(ext)) return '📝'
   return '📄'
 }
@@ -200,7 +196,14 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
             <div className="target-dir-label">Save location on Mac:</div>
             <div className="target-dir-row">
               <span>📁</span>
-              <span className="target-dir-path" title={saveLocation}>{saveLocation || '~/Downloads/CableDrop'}</span>
+              <span
+                className="target-dir-path"
+                title={saveLocation}
+                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                onClick={transferring ? undefined : handleChooseFolder}
+              >
+                {saveLocation || '~/Downloads/CableDrop'}
+              </span>
               {!transferring && (
                 <button className="btn btn-secondary" onClick={handleChooseFolder}>
                   📁 Choose folder on Mac...
@@ -211,7 +214,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
 
           {/* error alert */}
           {errorMsg && (
-            <div style={{ color: 'var(--red)', fontSize: '12px', padding: '8px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px' }}>
+            <div style={{ color: 'var(--status-error)', fontSize: '12px', padding: '8px', background: 'var(--status-error-bg)', borderRadius: '6px', border: '1px solid var(--status-error)' }}>
               ⚠ {errorMsg}
             </div>
           )}

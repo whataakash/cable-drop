@@ -89,7 +89,13 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
   const sdCardVolume = volumes.find((v) => v.type === 'sdcard')
 
   return (
-    <div className="directory-picker-overlay" onClick={onClose}>
+    <div
+      className="directory-picker-overlay"
+      onClick={(e) => {
+        e.stopPropagation()
+        onClose()
+      }}
+    >
       <div className="directory-picker-modal" onClick={(e) => e.stopPropagation()}>
         {/* header */}
         <div className="directory-picker-header">

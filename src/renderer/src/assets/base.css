@@ -1,51 +1,80 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./fonts/SpaceMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Space Mono';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./fonts/SpaceMono-Bold.ttf') format('truetype');
+}
 
 /* ============================================
    CableDrop — Base design tokens
-   Colors, typography, spacing from DESIGN.md
    ============================================ */
 
 :root {
-  /* --- Surface colors (dark theme) --- */
-  --bg-base: #121316;
-  --bg-surface-1: #18191e;
-  --bg-surface-2: #1f2026;
-  --bg-surface-3: #282a33;
-  --border-main: #2e313d;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-
-  /* --- Brand / accent --- */
-  --violet: #8b5cf6;
-  --violet-deep: #7c3aed;
-  --violet-glow: #a78bfa;
-
-  /* --- Text --- */
-  --text-primary: #ffffff;
-  --text-secondary: #e4e7ed;
-  --text-muted: #949ba8;
-
-  /* --- Status dots --- */
-  --status-ok: #10b981;
-  --status-warn: #f59e0b;
-  --status-error: #ef4444;
-
-  /* --- Spacing --- */
+  /* Common spacing & dimensions */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 12px;
   --space-lg: 16px;
   --space-xl: 24px;
 
-  /* --- Radius --- */
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* --- Titlebar height --- */
   --titlebar-h: 38px;
-
-  /* --- Sidebar width --- */
   --sidebar-w: 200px;
+
+  /* Surfaces */
+  --bg-base: #15151B;
+  --bg-sidebar: #1B1B24;
+  --bg-surface-1: #22222D;
+  --bg-surface-2: #22222D;
+  --bg-surface-3: #2A2938;
+  --bg-card: #22222D;
+  --bg-hover: #2A2938;
+
+  /* Accent */
+  --violet: #947CFF;
+  --violet-deep: #A695FF;
+  --violet-glow: #A695FF;
+  --violet-subtle: #30284D;
+  --btn-primary-text: #15151B;
+
+  /* Typography */
+  --text-primary: #F2F2F7;
+  --text-secondary: #A4A4B5;
+  --text-muted: #7E7E91;
+
+  /* Borders */
+  --border-main: #343440;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+
+  /* Status */
+  --status-ok: #45C99A;
+  --status-warn: #E9B65C;
+  --status-error: #FF737D;
+  --red: #FF737D;
+
+  /* Status subtle backgrounds */
+  --status-ok-bg: rgba(69, 201, 154, 0.12);
+  --status-warn-bg: rgba(233, 182, 92, 0.12);
+  --status-error-bg: rgba(255, 115, 125, 0.12);
+
+  /* Schematic accents */
+  --schematic-blue: #38BDF8;
+  --schematic-blue-glow: rgba(56, 189, 248, 0.4);
+
+  /* Overlays & Shadows */
+  --modal-overlay: rgba(0, 0, 0, 0.65);
+  --modal-shadow: 0 16px 40px rgba(0, 0, 0, 0.65);
+  --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* --- Reset --- */
@@ -61,7 +90,7 @@ body {
   min-height: 100vh;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: 'Space Mono', monospace, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Space Mono', ui-monospace, Menlo, Monaco, monospace;
   font-size: 13px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;

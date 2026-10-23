@@ -108,11 +108,18 @@ export const adb = {
     return await bridge.pullFile(deviceId, remotePath, localPath)
   },
 
-  // Pick files from Mac using native Finder dialog
+  // Pick files or folders from Mac using native Finder dialog
   async openFiles() {
     const bridge = getBridge()
     if (!bridge || !bridge.openFiles) return []
     return await bridge.openFiles()
+  },
+
+  // Pick entire folders from Mac using native Finder dialog
+  async openFolders() {
+    const bridge = getBridge()
+    if (!bridge || !bridge.openFolders) return []
+    return await bridge.openFolders()
   },
 
   // Pick folder on Mac using native Finder dialog

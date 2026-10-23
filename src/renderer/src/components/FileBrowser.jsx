@@ -6,72 +6,26 @@ import adb from '../adb'
 
 // Map file extensions to clean display kinds and icons
 function getFileInfo(name, isFolder) {
-  if (isFolder) {
-    return { type: 'Folder', icon: '📁' }
-  }
-
-  const dotIdx = name.lastIndexOf('.')
-  const ext = dotIdx !== -1 ? name.slice(dotIdx + 1).toLowerCase() : ''
-
-  switch (ext) {
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif':
-    case 'webp':
-    case 'heic':
-    case 'heif':
-      return { type: 'Image', icon: '🖼' }
-    case 'mp4':
-    case 'mov':
-    case 'mkv':
-    case 'avi':
-    case 'webm':
-      return { type: 'Video', icon: '🎬' }
-    case 'mp3':
-    case 'm4a':
-    case 'flac':
-    case 'wav':
-    case 'ogg':
-      return { type: 'Audio', icon: '🎵' }
-    case 'pdf':
-      return { type: 'PDF Document', icon: '📄' }
-    case 'txt':
-    case 'md':
-    case 'json':
-    case 'xml':
-      return { type: 'Text Document', icon: '📝' }
-    case 'doc':
-    case 'docx':
-    case 'xls':
-    case 'xlsx':
-    case 'ppt':
-    case 'pptx':
-      return { type: 'Office Document', icon: '📄' }
-    case 'apk':
-      return { type: 'Android App', icon: '📦' }
-    case 'zip':
-    case 'rar':
-    case '7z':
-    case 'tar':
-    case 'gz':
-      return { type: 'Archive', icon: '🗜' }
-    default:
-      return { type: ext ? `${ext.toUpperCase()} File` : 'File', icon: '📄' }
-  }
+  if (isFolder) return { type: 'Folder', icon: '📁' }
+  const ext = (name || '').split('.').pop().toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif'].includes(ext)) return { type: 'Image', icon: '🖼' }
+  if (['mp4', 'mov', 'mkv', 'avi', 'webm'].includes(ext)) return { type: 'Video', icon: '🎬' }
+  if (['mp3', 'm4a', 'flac', 'wav', 'ogg'].includes(ext)) return { type: 'Audio', icon: '🎵' }
+  if (ext === 'pdf') return { type: 'PDF Document', icon: '📄' }
+  if (['txt', 'md', 'json', 'xml'].includes(ext)) return { type: 'Text Document', icon: '📝' }
+  if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) return { type: 'Office Document', icon: '📄' }
+  if (ext === 'apk') return { type: 'Android App', icon: '📦' }
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { type: 'Archive', icon: '🗜' }
+  return { type: ext ? `${ext.toUpperCase()} File` : 'File', icon: '📄' }
 }
 
 // Format raw byte sizes into human readable strings (KB, MB, GB)
 function formatSize(bytes) {
-  if (!bytes || bytes === 0) return '—'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let s = bytes
-  let idx = 0
-  while (s >= 1024 && idx < units.length - 1) {
-    s /= 1024
-    idx++
-  }
-  return `${s.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`
+  if (!bytes) return '—'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
 }
 
 function FileBrowser({
