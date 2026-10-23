@@ -1,0 +1,1102 @@
+/* ============================================
+   CableDrop — Main app styles
+   Layout, components, screen-specific styles
+   ============================================ */
+
+/* --- App shell layout --- */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Main content area (below titlebar) */
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* The right-side content panel */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+/* ============================================
+   Titlebar
+   macOS-style top bar with drag region
+   ============================================ */
+.titlebar {
+  height: var(--titlebar-h);
+  background: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-main);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-lg);
+  -webkit-app-region: drag; /* makes it draggable */
+  gap: var(--space-lg);
+  flex-shrink: 0;
+}
+
+/* space for macOS traffic lights (close/min/max buttons) */
+.titlebar-traffic-spacer {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.titlebar-brand-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--violet);
+}
+
+/* nav tabs inside the titlebar */
+.titlebar-nav {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag; /* clicks should work on tabs */
+}
+
+.titlebar-tab {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s;
+}
+
+.titlebar-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-surface-3);
+}
+
+.titlebar-tab.active {
+  color: var(--text-primary);
+  background: var(--violet);
+}
+
+/* push right-side items to the end */
+.titlebar-spacer {
+  flex: 1;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  -webkit-app-region: no-drag;
+}
+
+/* small status pill in the titlebar center */
+.titlebar-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 3px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-main);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   Sidebar
+   Device list + storage shortcuts
+   ============================================ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-surface-1);
+  border-right: 1px solid var(--border-main);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.sidebar-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: var(--space-md) var(--space-lg);
+  padding-bottom: var(--space-xs);
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px var(--space-lg);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.1s;
+}
+
+.sidebar-item:hover {
+  background: var(--bg-surface-2);
+}
+
+.sidebar-item.active {
+  background: var(--bg-surface-2);
+  color: var(--text-primary);
+  border-left-color: var(--violet);
+}
+
+.sidebar-item-icon {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* device info at top of sidebar */
+.sidebar-device {
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border-main);
+}
+
+.sidebar-device-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.sidebar-device-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* sidebar footer */
+.sidebar-footer {
+  margin-top: auto;
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border-main);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   Status dot (green/yellow/violet)
+   ============================================ */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.status-dot.ok { background: var(--status-ok); }
+.status-dot.warn { background: var(--status-warn); }
+.status-dot.active { background: var(--violet); }
+.status-dot.off { background: var(--text-muted); }
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  height: 28px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-primary {
+  background: var(--violet);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-primary:hover {
+  background: var(--violet-deep);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-main);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-surface-3);
+}
+
+/* ============================================
+   Badge / pill
+   ============================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-lg);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-main);
+  background: var(--bg-surface-1);
+  color: var(--text-muted);
+}
+
+.badge.ok {
+  color: var(--status-ok);
+  border-color: var(--status-ok);
+}
+
+.badge.warn {
+  color: var(--status-warn);
+  border-color: var(--status-warn);
+}
+
+/* ============================================
+   Progress bar
+   ============================================ */
+.progress-track {
+  height: 4px;
+  background: var(--bg-surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--violet);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* ============================================
+   Welcome screen (initialization)
+   ============================================ */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+}
+
+.welcome h1 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.welcome p {
+  color: var(--text-muted);
+  max-width: 420px;
+}
+
+/* the macOS <-> Android connection diagram */
+.welcome-diagram {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-1);
+}
+
+.welcome-diagram-node {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.welcome-diagram-node-icon {
+  font-size: 32px;
+  margin-bottom: var(--space-xs);
+}
+
+.welcome-diagram-line {
+  width: 120px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.welcome-diagram-line hr {
+  border: none;
+  border-top: 1px dashed var(--border-main);
+  margin-bottom: var(--space-xs);
+}
+
+/* init steps checklist */
+.init-steps {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  width: 100%;
+  max-width: 540px;
+}
+
+.init-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  font-size: 13px;
+}
+
+.init-step-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.init-step-result {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* init progress at bottom */
+.init-progress {
+  width: 100%;
+  max-width: 540px;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+}
+
+.init-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   No device connected screen
+   ============================================ */
+.no-device {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+}
+
+.no-device h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.no-device > p {
+  color: var(--text-muted);
+  max-width: 480px;
+  font-size: 13px;
+}
+
+/* step cards row */
+.setup-steps {
+  display: flex;
+  gap: var(--space-lg);
+  max-width: 800px;
+  width: 100%;
+}
+
+.setup-card {
+  flex: 1;
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  text-align: left;
+}
+
+.setup-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.setup-card-number {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-3);
+  color: var(--text-muted);
+}
+
+.setup-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+}
+
+.setup-card p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.setup-card-footer {
+  margin-top: var(--space-md);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* action buttons row */
+.no-device-actions {
+  display: flex;
+  gap: var(--space-md);
+}
+
+/* unauthorized device banner */
+.unauth-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  max-width: 800px;
+  width: 100%;
+}
+
+.unauth-banner-text h4 {
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.unauth-banner-text p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ============================================
+   Connected devices screen
+   ============================================ */
+.devices-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+}
+
+.devices-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.devices-header-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.devices-header-sub {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin-bottom: var(--space-xl);
+}
+
+/* device card */
+.device-card {
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.device-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.device-card-info {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.device-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.device-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.device-card-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.device-card-phy {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.device-card-phy-speed {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* storage bar */
+.storage-bar {
+  margin-top: var(--space-lg);
+}
+
+.storage-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.storage-bar-track {
+  height: 8px;
+  background: var(--bg-surface-3);
+  border-radius: 4px;
+  display: flex;
+  overflow: hidden;
+}
+
+.storage-bar-segment {
+  height: 100%;
+}
+
+.storage-bar-legend {
+  display: flex;
+  gap: var(--space-lg);
+  margin-top: var(--space-sm);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.storage-bar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.storage-bar-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* device card actions row */
+.device-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+.device-card-actions-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* ============================================
+   File browser (Android file manager)
+   ============================================ */
+.filebrowser {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* toolbar above the table */
+.filebrowser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  flex-shrink: 0;
+}
+
+/* breadcrumb path */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  padding: var(--space-sm) 0;
+}
+
+.breadcrumb-segment {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.breadcrumb-segment:hover {
+  background: var(--bg-surface-3);
+  color: var(--text-primary);
+}
+
+.breadcrumb-segment.current {
+  background: var(--bg-surface-3);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.breadcrumb-sep {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* selection bar */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  margin-bottom: var(--space-sm);
+}
+
+.selection-bar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.selection-bar-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* file table */
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.file-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.file-table th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-surface-1);
+  border-bottom: 1px solid var(--border-main);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* right-align the size column */
+.file-table th:last-child,
+.file-table td:last-child {
+  text-align: right;
+}
+
+.file-table td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.file-table tr {
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.file-table tbody tr:hover {
+  background: var(--bg-surface-3);
+}
+
+.file-table tbody tr.selected {
+  background: var(--violet-deep);
+}
+
+/* file name cell */
+.file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.file-icon {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.file-size {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.file-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* checkbox in table */
+.checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border-main);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.checkbox.checked {
+  background: var(--violet);
+  border-color: var(--violet);
+  color: white;
+  font-size: 10px;
+}
+
+/* ============================================
+   Transfer modal (send / receive)
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-md);
+  width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.65);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-main);
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-header p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.modal-close {
+  background: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-top: 1px solid var(--border-main);
+}
+
+/* transfer direction indicator */
+.transfer-direction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.transfer-direction-arrow {
+  color: var(--violet);
+  font-size: 14px;
+}
+
+/* file drop zone */
+.drop-zone {
+  border: 1px dashed var(--border-main);
+  border-radius: var(--radius-md);
+  padding: var(--space-xl);
+  text-align: center;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone:hover {
+  border-color: var(--violet);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.drop-zone-icon {
+  font-size: 24px;
+  margin-bottom: var(--space-sm);
+}
+
+.drop-zone-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.drop-zone-sub {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* staged file list in transfer modal */
+.staged-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.staged-list {
+  list-style: none;
+}
+
+.staged-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+
+.staged-item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.staged-item-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.staged-item-size {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.staged-item-remove {
+  background: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 2px;
+}
+
+.staged-item-remove:hover {
+  color: var(--status-error);
+}
+
+/* target directory picker */
+.target-dir {
+  padding: var(--space-md);
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-sm);
+}
+
+.target-dir-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: var(--space-sm);
+}
+
+.target-dir-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.target-dir-path {
+  flex: 1;
+  padding: 4px 8px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* transfer progress inside modal */
+.transfer-progress {
+  padding: var(--space-md);
+  background: var(--bg-surface-1);
+  border: 1px solid var(--border-main);
+  border-radius: var(--radius-sm);
+}
+
+.transfer-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: var(--space-sm);
+}
+
+.transfer-progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: var(--space-sm);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   Status bar (bottom of window)
+   ============================================ */
+.statusbar {
+  height: 24px;
+  background: var(--bg-surface-1);
+  border-top: 1px solid var(--border-main);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-lg);
+  gap: var(--space-lg);
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.statusbar-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statusbar-right {
+  margin-left: auto;
+}
+
+/* ============================================
+   Utility classes
+   ============================================ */
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-sm {
+  font-size: 12px;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
