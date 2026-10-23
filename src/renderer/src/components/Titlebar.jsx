@@ -4,7 +4,14 @@
 
 import logo from '../assets/logo.png'
 
-function Titlebar({ device, currentPage, onNavigate }) {
+function Titlebar({
+  device,
+  currentPage,
+  onNavigate,
+  onSendFiles,
+  onReceiveFiles,
+  selectedCount = 0
+}) {
   const deviceName = device?.name || device?.model || 'Android Device'
 
   return (
@@ -52,6 +59,24 @@ function Titlebar({ device, currentPage, onNavigate }) {
               <span>Searching for USB devices...</span>
             </>
           )}
+        </div>
+
+        {/* Right-aligned action buttons */}
+        <div className="titlebar-actions">
+          <button
+            className="btn btn-primary"
+            onClick={onSendFiles}
+            disabled={!device}
+          >
+            📤 Send to Phone
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={onReceiveFiles}
+            disabled={!device}
+          >
+            📥 Save to Mac
+          </button>
         </div>
       </div>
     </header>

@@ -34,9 +34,9 @@ function NoDeviceScreen({ devices = [], onRescan }) {
           {/* USB Chip floating in center of cable */}
           <g>
             <rect
-              x="278"
+              x="250"
               y="46"
-              width="50"
+              width="100"
               height="24"
               rx="6"
               fill="var(--bg-card)"
@@ -53,7 +53,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
               letterSpacing="0.08em"
               fill="var(--schematic-blue)"
             >
-              USB 
+              CABLE DROP
             </text>
           </g>
 

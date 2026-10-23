@@ -34,7 +34,7 @@ function FileBrowser({
   onSelectDevice,
   initialPath = '/sdcard',
   onPathChange,
-  onSendFiles,
+  onSelectionChange,
   onReceiveFiles
 }) {
   const [currentPath, setCurrentPath] = useState(initialPath || '/sdcard')
@@ -197,6 +197,12 @@ function FileBrowser({
     }
   }
 
+  // Report selection changes to parent component
+  useEffect(() => {
+    const selectedItems = files.filter((f) => selected.includes(f.fullPath))
+    onSelectionChange?.(selectedItems)
+  }, [selected, files])
+
   // Build breadcrumb segments with clean volume root (Internal Storage / SD Card)
   function renderBreadcrumbs() {
     const relPath = currentPath.startsWith(volumeRoot)
@@ -291,24 +297,9 @@ function FileBrowser({
           ↻ Refresh
         </button>
 
-        {/* Right-aligned action buttons */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button className="btn btn-primary" onClick={() => onSendFiles && onSendFiles(currentPath)}>
-            📤 Send to Phone
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => {
-              const selectedItems = files.filter((f) => selected.includes(f.fullPath))
-              if (onReceiveFiles) onReceiveFiles(selectedItems)
-            }}
-            disabled={selected.length === 0}
-          >
-            📥 Save to Mac
-          </button>
-
-          {/* Device Switcher (shown when multiple devices are connected) */}
-          {devices.length > 1 && (
+        {/* Right-aligned device switcher */}
+        {devices.length > 1 && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <select
               className="device-select-dropdown"
               value={device?.id}
@@ -323,8 +314,8 @@ function FileBrowser({
                 </option>
               ))}
             </select>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* breadcrumb path */}
@@ -337,7 +328,13 @@ function FileBrowser({
             ✅ {selected.length} {selected.length === 1 ? 'item' : 'items'} selected
           </div>
           <div className="selection-bar-actions">
-            <button className="btn btn-primary" onClick={onReceiveFiles}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                const selectedItems = files.filter((f) => selected.includes(f.fullPath))
+                if (onReceiveFiles) onReceiveFiles(selectedItems)
+              }}
+            >
               📥 Save to Mac
             </button>
             <button className="btn btn-secondary" onClick={() => setSelected([])}>

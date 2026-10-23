@@ -144,6 +144,20 @@
   height: 9px;
 }
 
+/* Action buttons on the top right of the titlebar */
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-actions .btn {
+  height: 32px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 /* ============================================
    Sidebar
    Device list + storage shortcuts

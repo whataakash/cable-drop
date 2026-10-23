@@ -37,6 +37,7 @@ function App() {
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [sendTargetDir, setSendTargetDir] = useState('/sdcard/Download')
   const [receiveFilesList, setReceiveFilesList] = useState([])
+  const [selectedFiles, setSelectedFiles] = useState([])
 
   // Real ADB state
   const [devices, setDevices] = useState([])
@@ -114,6 +115,7 @@ function App() {
   function handleSelectDevice(dev) {
     setSelectedDevice(dev)
     setBrowserPath('/sdcard')
+    setSelectedFiles([])
   }
 
   // Launch animation: brief display then smooth transition to main UI
@@ -211,14 +213,8 @@ function App() {
             onSelectDevice={handleSelectDevice}
             initialPath={browserPath}
             onPathChange={(path) => setBrowserPath(path)}
-            onSendFiles={(path) => {
-              setSendTargetDir(path || browserPath || '/sdcard/Download')
-              setShowSendModal(true)
-            }}
-            onReceiveFiles={(items) => {
-              setReceiveFilesList(items || [])
-              setShowReceiveModal(true)
-            }}
+            onSelectionChange={(items) => setSelectedFiles(items || [])}
+            onReceiveFiles={handleReceiveFromTitlebar}
           />
         )
       default:
@@ -243,6 +239,19 @@ function App() {
     }
   }
 
+  // Send to phone from titlebar button
+  function handleSendFromTitlebar() {
+    setSendTargetDir(browserPath || '/sdcard/Download')
+    setShowSendModal(true)
+  }
+
+  // Save files to Mac from titlebar button
+  function handleReceiveFromTitlebar(items) {
+    const toReceive = Array.isArray(items) && items.length > 0 ? items : selectedFiles
+    setReceiveFilesList(toReceive || [])
+    setShowReceiveModal(true)
+  }
+
   return (
     <div className="app">
       {/* Launch animation splash overlay */}
@@ -258,7 +267,14 @@ function App() {
         </div>
       )}
 
-      <Titlebar device={activeDevice} currentPage={activeTab} onNavigate={handleNavigate} />
+      <Titlebar
+        device={activeDevice}
+        currentPage={activeTab}
+        onNavigate={handleNavigate}
+        onSendFiles={handleSendFromTitlebar}
+        onReceiveFiles={handleReceiveFromTitlebar}
+        selectedCount={selectedFiles.length}
+      />
 
       <div className="app-body">
         {showSidebar && (
