@@ -10,6 +10,7 @@ import WelcomeScreen from './components/WelcomeScreen'
 import NoDeviceScreen from './components/NoDeviceScreen'
 import ConnectedDevices from './components/ConnectedDevices'
 import FileBrowser from './components/FileBrowser'
+import TransferLogs from './components/TransferLogs'
 import SendFilesModal from './components/SendFilesModal'
 import ReceiveFilesModal from './components/ReceiveFilesModal'
 import logo from './assets/logo.png'
@@ -19,8 +20,21 @@ function App() {
   // Welcome initialization gate: ensures WelcomeScreen completes before showing main screens
   const [isWelcomeDone, setIsWelcomeDone] = useState(false)
 
-  // Screen state: 'welcome' | 'no-device' | 'devices' | 'files'
+  // Screen state: 'welcome' | 'no-device' | 'devices' | 'files' | 'logs'
   const [screen, setScreen] = useState('welcome')
+
+  // Live session transfer logs (resets on app re-launch)
+  const [transferLogs, setTransferLogs] = useState([])
+
+  // Record a file transfer log entry
+  function handleLogTransfer(entry) {
+    const newLog = {
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      timestamp: new Date(),
+      ...entry
+    }
+    setTransferLogs((prev) => [newLog, ...prev])
+  }
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState('devices')
@@ -201,6 +215,8 @@ function App() {
         return (
           <ConnectedDevices
             devices={devices}
+            selectedDevice={activeDevice}
+            onSelectDevice={handleSelectDevice}
             onRescan={refreshDevices}
             onRenameDevice={handleRenameDevice}
             onBrowseFiles={(dev) => {
@@ -222,6 +238,13 @@ function App() {
             onReceiveFiles={handleReceiveFromTitlebar}
           />
         )
+      case 'logs':
+        return (
+          <TransferLogs
+            logs={transferLogs}
+            onClear={() => setTransferLogs([])}
+          />
+        )
       default:
         return <NoDeviceScreen devices={devices} onRescan={refreshDevices} />
     }
@@ -241,6 +264,8 @@ function App() {
         setScreen('no-device')
         setActiveTab('devices')
       }
+    } else if (tab === 'logs') {
+      setScreen('logs')
     }
   }
 
@@ -268,6 +293,7 @@ function App() {
           onSendFiles={handleSendFromTitlebar}
           onReceiveFiles={handleReceiveFromTitlebar}
           selectedCount={selectedFiles.length}
+          logCount={transferLogs.length}
         />
       )}
 
@@ -296,6 +322,7 @@ function App() {
           device={activeDevice}
           targetDirectory={sendTargetDir}
           onClose={() => setShowSendModal(false)}
+          onLogTransfer={handleLogTransfer}
         />
       )}
       {showReceiveModal && (
@@ -303,6 +330,7 @@ function App() {
           device={activeDevice}
           files={receiveFilesList}
           onClose={() => setShowReceiveModal(false)}
+          onLogTransfer={handleLogTransfer}
         />
       )}
     </div>

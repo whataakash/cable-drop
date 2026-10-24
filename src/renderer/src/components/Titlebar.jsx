@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
-import { sendLightIcon, receiveIcon } from '../assets/icons'
+import { sendLightIcon, receiveLightIcon } from '../assets/icons'
 
 function Titlebar({
   device,
@@ -12,7 +12,8 @@ function Titlebar({
   onNavigate,
   onSendFiles,
   onReceiveFiles,
-  selectedCount = 0
+  selectedCount = 0,
+  logCount = 0
 }) {
   const deviceName = device?.name || device?.model || 'Android Device'
   const [zoomFactor, setZoomFactor] = useState(1.0)
@@ -92,6 +93,13 @@ function Titlebar({
                 Files
               </button>
             )}
+            <button
+              className={`titlebar-tab ${currentPage === 'logs' ? 'active' : ''}`}
+              onClick={() => onNavigate('logs')}
+            >
+              Logs
+              {logCount > 0 && <span className="titlebar-tab-badge">{logCount}</span>}
+            </button>
           </div>
         </div>
 
@@ -118,14 +126,14 @@ function Titlebar({
             disabled={!device}
           >
             <img src={sendLightIcon} alt="" className="btn-icon" />
-            Send to Phone
+            Send to {deviceName}
           </button>
           <button
-            className="btn btn-secondary"
+            className="btn btn-save-to-mac"
             onClick={onReceiveFiles}
             disabled={!device}
           >
-            <img src={receiveIcon} alt="" className="btn-icon" />
+            <img src={receiveLightIcon} alt="" className="btn-icon" />
             Save to Mac
           </button>
 

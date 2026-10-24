@@ -99,6 +99,20 @@ export const adb = {
     }
   },
 
+  // Query internal storage stats via adb shell df -k /sdcard
+  async getDeviceStorage(deviceId) {
+    const bridge = getBridge()
+    if (!bridge || !bridge.getDeviceStorage) return null
+    return await bridge.getDeviceStorage(deviceId)
+  },
+
+  // Query battery status via adb shell dumpsys battery
+  async getDeviceBattery(deviceId) {
+    const bridge = getBridge()
+    if (!bridge || !bridge.getDeviceBattery) return null
+    return await bridge.getDeviceBattery(deviceId)
+  },
+
   // Push file from Mac to Android
   async pushFile(deviceId, localPath, remotePath) {
     const bridge = getBridge()

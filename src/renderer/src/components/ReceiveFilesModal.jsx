@@ -22,7 +22,7 @@ function getFileIcon(filename, isFolder) {
   return fileIcon
 }
 
-function ReceiveFilesModal({ device, files = [], onClose }) {
+function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
   const [stagedFiles, setStagedFiles] = useState(files || [])
   const [saveLocation, setSaveLocation] = useState('')
   const [defaultSaveDir, setDefaultSaveDir] = useState('')
@@ -162,6 +162,19 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
         if (output) {
           setStatsText(output)
         }
+        if (onLogTransfer) {
+          onLogTransfer({
+            type: 'receive',
+            deviceName: device?.name || device?.model || 'Android Device',
+            deviceId: device?.id,
+            fileName: file.name,
+            fileSize: file.size,
+            sourcePath: filePath,
+            targetPath: saveLocation,
+            status: 'completed',
+            statsText: output || `${file.name} saved`
+          })
+        }
       }
 
       setProgressPercent(100)
@@ -173,6 +186,19 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
       const currentItem = stagedFiles[currentFileIdx]
       if (currentItem) {
         setFileStatuses((prev) => ({ ...prev, [currentItem.fullPath || currentItem.path]: 'error' }))
+        if (onLogTransfer) {
+          onLogTransfer({
+            type: 'receive',
+            deviceName: device?.name || device?.model || 'Android Device',
+            deviceId: device?.id,
+            fileName: currentItem.name,
+            fileSize: currentItem.size,
+            sourcePath: currentItem.fullPath || currentItem.path,
+            targetPath: saveLocation,
+            status: 'failed',
+            error: err.message || 'Pull failed'
+          })
+        }
       }
     } finally {
       adb.removeProgressListener()
@@ -463,7 +489,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
             )}
             {!completed ? (
               <button
-                className="btn btn-primary"
+                className="btn btn-save-to-mac"
                 onClick={handleStartPull}
                 disabled={stagedFiles.length === 0 || transferring}
               >

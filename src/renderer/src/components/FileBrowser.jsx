@@ -311,7 +311,7 @@ function FileBrowser({
             >
               {devices.map((d) => (
                 <option key={d.id} value={d.id}>
-                  📱 {d.name} ({d.serial})
+                  {d.name} ({d.serial})
                 </option>
               ))}
             </select>
@@ -330,7 +330,7 @@ function FileBrowser({
           </div>
           <div className="selection-bar-actions">
             <button
-              className="btn btn-primary"
+              className="btn btn-save-to-mac"
               onClick={() => {
                 const selectedItems = files.filter((f) => selected.includes(f.fullPath))
                 if (onReceiveFiles) onReceiveFiles(selectedItems)

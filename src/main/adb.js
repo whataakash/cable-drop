@@ -453,6 +453,80 @@ export async function pullFile(deviceId, remotePath, localPath, onProgress = nul
   return await runAdbDevice(deviceId, ['pull', '-p', remotePath, localPath], onProgress)
 }
 
+// 9. Query internal storage stats via adb shell df -k /sdcard
+export async function getDeviceStorage(deviceId) {
+  try {
+    const raw = await runAdbDevice(deviceId, ['shell', 'df', '-k', '/sdcard'])
+    // Example: /dev/fuse 112275420 47038028 65106320 42% /storage/emulated
+    const match = raw.match(/(\d+)\s+(\d+)\s+(\d+)\s+(\d+)%/)
+    if (match) {
+      const total1k = parseInt(match[1], 10)
+      const used1k = parseInt(match[2], 10)
+      const avail1k = parseInt(match[3], 10)
+      const percentUsed = parseInt(match[4], 10)
+
+      const totalBytes = total1k * 1024
+      const usedBytes = used1k * 1024
+      const availableBytes = avail1k * 1024
+
+      return {
+        totalBytes,
+        usedBytes,
+        availableBytes,
+        percentUsed,
+        raw
+      }
+    }
+    return null
+  } catch (err) {
+    console.error('Error getting storage stats for device', deviceId, err)
+    return null
+  }
+}
+
+// 10. Query battery status via adb shell dumpsys battery
+export async function getDeviceBattery(deviceId) {
+  try {
+    const raw = await runAdbDevice(deviceId, ['shell', 'dumpsys', 'battery'])
+    const levelMatch = raw.match(/level:\s*(\d+)/i)
+    const scaleMatch = raw.match(/scale:\s*(\d+)/i)
+    const statusMatch = raw.match(/status:\s*(\d+)/i)
+    const acMatch = raw.match(/AC powered:\s*(true|false)/i)
+    const usbMatch = raw.match(/USB powered:\s*(true|false)/i)
+    const wirelessMatch = raw.match(/Wireless powered:\s*(true|false)/i)
+
+    const level = levelMatch ? parseInt(levelMatch[1], 10) : null
+    const scale = scaleMatch ? parseInt(scaleMatch[1], 10) : 100
+    const percent = level !== null ? Math.round((level / scale) * 100) : null
+
+    const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : null
+    const isCharging =
+      (acMatch && acMatch[1].toLowerCase() === 'true') ||
+      (usbMatch && usbMatch[1].toLowerCase() === 'true') ||
+      (wirelessMatch && wirelessMatch[1].toLowerCase() === 'true') ||
+      statusCode === 2
+
+    let statusText = 'Battery'
+    if (statusCode === 2) statusText = 'Charging'
+    else if (statusCode === 5) statusText = 'Full'
+    else if (statusCode === 3) statusText = 'Discharging'
+    else if (statusCode === 4) statusText = 'Not charging'
+    else if (isCharging) statusText = 'Charging'
+
+    return {
+      level,
+      scale,
+      percent,
+      isCharging,
+      statusText,
+      raw
+    }
+  } catch (err) {
+    console.error('Error getting battery stats for device', deviceId, err)
+    return null
+  }
+}
+
 // Register IPC handlers for Electron
 export function setupAdbIpc() {
   ipcMain.handle('adb:getPath', () => getAdbPath())
@@ -463,6 +537,8 @@ export function setupAdbIpc() {
   ipcMain.handle('adb:listFiles', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:listDirectory', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:getStorageVolumes', (_, deviceId) => getStorageVolumes(deviceId))
+  ipcMain.handle('adb:getDeviceStorage', (_, deviceId) => getDeviceStorage(deviceId))
+  ipcMain.handle('adb:getDeviceBattery', (_, deviceId) => getDeviceBattery(deviceId))
   ipcMain.handle('adb:pushFile', (event, deviceId, localPath, remotePath) => {
     return pushFile(deviceId, localPath, remotePath, (percent, text) => {
       event.sender.send('adb:progress', { percent, text })

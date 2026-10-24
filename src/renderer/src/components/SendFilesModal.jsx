@@ -19,7 +19,7 @@ function getFileIcon(filename, isDirectory) {
   return fileIcon
 }
 
-function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose, onSuccess }) {
+function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose, onSuccess, onLogTransfer }) {
   const [stagedFiles, setStagedFiles] = useState([])
   const [targetDir, setTargetDir] = useState(targetDirectory || '/sdcard/Download')
   const [hasChosenDir, setHasChosenDir] = useState(Boolean(targetDirectory))
@@ -144,6 +144,19 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         if (output) {
           setTransferStatsText(output)
         }
+        if (onLogTransfer) {
+          onLogTransfer({
+            type: 'send',
+            deviceName: device?.name || device?.model || 'Android Device',
+            deviceId: device?.id,
+            fileName: file.name,
+            fileSize: file.size,
+            sourcePath: file.path,
+            targetPath: targetDir,
+            status: 'completed',
+            statsText: output || `${file.name} pushed`
+          })
+        }
       }
 
       setProgressPercent(100)
@@ -154,6 +167,19 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
       console.error('Push error:', err)
       setErrorMsg(err.message || 'File push failed')
       setFileStatuses((prev) => ({ ...prev, [stagedFiles[currentFileIdx]?.path]: 'error' }))
+      if (onLogTransfer && stagedFiles[currentFileIdx]) {
+        onLogTransfer({
+          type: 'send',
+          deviceName: device?.name || device?.model || 'Android Device',
+          deviceId: device?.id,
+          fileName: stagedFiles[currentFileIdx].name,
+          fileSize: stagedFiles[currentFileIdx].size,
+          sourcePath: stagedFiles[currentFileIdx].path || 'Mac',
+          targetPath: targetDir,
+          status: 'failed',
+          error: err.message || 'Push failed'
+        })
+      }
     } finally {
       adb.removeProgressListener()
       setTransferring(false)

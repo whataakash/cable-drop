@@ -28,13 +28,13 @@ function WelcomeScreen({ onInitComplete }) {
               if (!isPausedRef.current) {
                 onCompleteRef.current?.()
               }
-            }, 400)
+            }, 200)
           }
           return 100
         }
-        return prev + 1
+        return prev + 2
       })
-    }, 50)
+    }, 16)
 
     return () => clearInterval(timer)
   }, [isPaused])
