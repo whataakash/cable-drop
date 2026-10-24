@@ -371,70 +371,72 @@ function FileBrowser({
           <p className="filebrowser-message-text">This folder is empty</p>
         </div>
       ) : (
-        <table className="file-table">
-          <thead>
-            <tr>
-              <th style={{ width: 34 }}>
-                <span
-                  className={`checkbox ${selected.length === files.length && files.length > 0 ? 'checked' : ''}`}
-                  onClick={toggleSelectAll}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {selected.length === files.length && files.length > 0 ? '✓' : ''}
-                </span>
-              </th>
-              <th>Name</th>
-              <th>Date Modified</th>
-              <th>Kind</th>
-              <th>Size</th>
-            </tr>
-          </thead>
-          <tbody>
-            {files.map((file) => {
-              const isSelected = selected.includes(file.fullPath)
-              const info = getFileInfo(file.name, file.isFolder)
+        <div className="file-table-container">
+          <table className="file-table">
+            <thead>
+              <tr>
+                <th style={{ width: 34 }}>
+                  <span
+                    className={`checkbox ${selected.length === files.length && files.length > 0 ? 'checked' : ''}`}
+                    onClick={toggleSelectAll}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {selected.length === files.length && files.length > 0 ? '✓' : ''}
+                  </span>
+                </th>
+                <th>Name</th>
+                <th>Date Modified</th>
+                <th>Kind</th>
+                <th>Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {files.map((file) => {
+                const isSelected = selected.includes(file.fullPath)
+                const info = getFileInfo(file.name, file.isFolder)
 
-              return (
-                <tr
-                  key={file.fullPath}
-                  className={isSelected ? 'selected' : ''}
-                  onClick={() => {
-                    if (file.isFolder) {
-                      handleOpenFolder(file)
-                    } else {
-                      toggleSelect(file.fullPath)
-                    }
-                  }}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <span
-                      className={`checkbox ${isSelected ? 'checked' : ''}`}
-                      onClick={() => toggleSelect(file.fullPath)}
-                    >
-                      {isSelected ? '✓' : ''}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="file-name-cell">
-                      <img src={info.icon} alt="" className="file-row-icon" style={{ marginRight: 8 }} />
+                return (
+                  <tr
+                    key={file.fullPath}
+                    className={isSelected ? 'selected' : ''}
+                    onClick={() => {
+                      if (file.isFolder) {
+                        handleOpenFolder(file)
+                      } else {
+                        toggleSelect(file.fullPath)
+                      }
+                    }}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
                       <span
-                        style={{
-                          fontWeight: file.isFolder ? 600 : 400,
-                          color: file.isFolder ? 'var(--text-primary)' : 'var(--text-secondary)'
-                        }}
+                        className={`checkbox ${isSelected ? 'checked' : ''}`}
+                        onClick={() => toggleSelect(file.fullPath)}
                       >
-                        {file.name === 'sdcard' ? 'Internal Storage' : file.name}
+                        {isSelected ? '✓' : ''}
                       </span>
-                    </div>
-                  </td>
-                  <td className="file-date">{file.date || '—'}</td>
-                  <td className="text-muted">{info.type}</td>
-                  <td className="file-size">{formatSize(file.size)}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td>
+                      <div className="file-name-cell">
+                        <img src={info.icon} alt="" className="file-row-icon" style={{ marginRight: 8 }} />
+                        <span
+                          style={{
+                            fontWeight: file.isFolder ? 600 : 400,
+                            color: file.isFolder ? 'var(--text-primary)' : 'var(--text-secondary)'
+                          }}
+                        >
+                          {file.name === 'sdcard' ? 'Internal Storage' : file.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="file-date">{file.date || '—'}</td>
+                    <td className="text-muted">{info.type}</td>
+                    <td className="file-size">{formatSize(file.size)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   )

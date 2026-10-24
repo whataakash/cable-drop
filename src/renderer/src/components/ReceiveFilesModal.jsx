@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import adb from '../adb'
 import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, receiveLightIcon, arrowIcon } from '../assets/icons'
+import FileBrowser from './FileBrowser'
 
 function formatSize(bytes) {
   if (!bytes) return '—'
@@ -26,6 +27,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
   const [saveLocation, setSaveLocation] = useState('')
   const [defaultSaveDir, setDefaultSaveDir] = useState('')
   const [hasCustomFolder, setHasCustomFolder] = useState(false)
+  const [showBrowserModal, setShowBrowserModal] = useState(false)
 
   // Transfer execution states
   const [transferring, setTransferring] = useState(false)
@@ -103,6 +105,13 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
     setErrorMsg(null)
   }
 
+  // Clean up progress listener on unmount
+  useEffect(() => {
+    return () => {
+      adb.removeProgressListener()
+    }
+  }, [])
+
   // Execute adb pull sequentially for all staged files
   async function handleStartPull() {
     if (!device?.id || stagedFiles.length === 0 || transferring) return
@@ -119,8 +128,26 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
     })
     setFileStatuses(statuses)
 
+    let currentFileIdx = 0
+
+    // Listen for real-time progress from adb pull -p
+    adb.onProgress((data) => {
+      const val = typeof data === 'object' && data !== null ? data.percent : data
+      const text = typeof data === 'object' && data !== null ? data.text : ''
+      if (total === 1) {
+        setProgressPercent(val)
+      } else {
+        const overall = Math.round(((currentFileIdx + val / 100) / total) * 100)
+        setProgressPercent(overall)
+      }
+      if (text) {
+        setStatsText(text)
+      }
+    })
+
     try {
       for (let i = 0; i < total; i++) {
+        currentFileIdx = i
         const file = stagedFiles[i]
         const filePath = file.fullPath || file.path
         setCurrentIndex(i)
@@ -143,11 +170,12 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
     } catch (err) {
       console.error('Pull error:', err)
       setErrorMsg(err.message || 'File pull failed')
-      const currentItem = stagedFiles[currentIndex]
+      const currentItem = stagedFiles[currentFileIdx]
       if (currentItem) {
         setFileStatuses((prev) => ({ ...prev, [currentItem.fullPath || currentItem.path]: 'error' }))
       }
     } finally {
+      adb.removeProgressListener()
       setTransferring(false)
     }
   }
@@ -222,13 +250,14 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
             <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div
                 className={`drop-zone ${stagedFiles.length > 0 ? 'selected' : ''}`}
-                style={{ cursor: 'default' }}
+                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                onClick={transferring ? undefined : () => setShowBrowserModal(true)}
               >
                 {stagedFiles.length === 0 ? (
                   <>
                     <img src={mobileIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">No files selected from Mobile</div>
-                    <div className="drop-zone-sub text-muted">Select files in browser to pull</div>
+                    <div className="drop-zone-sub text-muted">Click to browse & select files</div>
                   </>
                 ) : (
                   <>
@@ -237,7 +266,7 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
                       ✓ {stagedFiles.length} {stagedFiles.length === 1 ? 'item' : 'items'} chosen
                     </div>
                     <div className="drop-zone-sub text-muted">
-                      Total payload: {formatSize(totalBytes)}
+                      Total payload: {formatSize(totalBytes)} · Click to change
                     </div>
                   </>
                 )}
@@ -449,6 +478,45 @@ function ReceiveFilesModal({ device, files = [], onClose }) {
           </div>
         </div>
       </div>
+
+      {showBrowserModal && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 120 }}
+          onClick={() => setShowBrowserModal(false)}
+        >
+          <div
+            className="modal"
+            style={{
+              width: '860px',
+              maxWidth: '95vw',
+              height: '620px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <h3>📱 Select Files on {deviceName}</h3>
+                <p className="text-muted text-sm">Browse folders and select files to save to your Mac</p>
+              </div>
+              <button className="modal-close" onClick={() => setShowBrowserModal(false)}>✕</button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 var(--space-md) var(--space-md)' }}>
+              <FileBrowser
+                device={device}
+                initialPath="/sdcard"
+                onReceiveFiles={(chosenItems) => {
+                  setStagedFiles(chosenItems)
+                  setShowBrowserModal(false)
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

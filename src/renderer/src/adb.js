@@ -153,6 +153,22 @@ export const adb = {
     const bridge = getBridge()
     if (!bridge) throw new Error('ADB bridge is not available')
     return await bridge.raw(args)
+  },
+
+  // Listen for file transfer progress updates (0-100%)
+  onProgress(callback) {
+    const bridge = getBridge()
+    if (bridge?.onProgress) {
+      bridge.onProgress(callback)
+    }
+  },
+
+  // Remove progress listener
+  removeProgressListener() {
+    const bridge = getBridge()
+    if (bridge?.removeProgressListener) {
+      bridge.removeProgressListener()
+    }
   }
 }
 

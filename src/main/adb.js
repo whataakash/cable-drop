@@ -171,7 +171,7 @@ export async function killAdbServer() {
 }
 
 // Helper to run ADB targeting a specific device serial using spawn
-export function runAdbDevice(deviceId, shellArgs = []) {
+export function runAdbDevice(deviceId, shellArgs = [], onProgress = null) {
   return new Promise((resolve, reject) => {
     // Validate device serial
     if (!deviceId || typeof deviceId !== 'string' || !/^[a-zA-Z0-9.:_-]+$/.test(deviceId)) {
@@ -184,12 +184,29 @@ export function runAdbDevice(deviceId, shellArgs = []) {
     let stdout = ''
     let stderr = ''
 
+    function checkProgress(chunk) {
+      if (!onProgress) return
+      const text = chunk.toString()
+      const matches = [...text.matchAll(/(\d+)%/g)]
+      if (matches.length > 0) {
+        const lastMatch = matches[matches.length - 1]
+        const percent = parseInt(lastMatch[1], 10)
+        if (!isNaN(percent)) {
+          const lines = text.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean)
+          const lastLine = lines[lines.length - 1] || ''
+          onProgress(percent, lastLine)
+        }
+      }
+    }
+
     child.stdout.on('data', (chunk) => {
       stdout += chunk.toString()
+      checkProgress(chunk)
     })
 
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString()
+      checkProgress(chunk)
     })
 
     child.on('error', (err) => {
@@ -412,16 +429,16 @@ export async function getStorageVolumes(deviceId) {
   return volumes
 }
 
-// 7. Push file from local computer to Android device using adb push
-export async function pushFile(deviceId, localPath, remotePath) {
+// 7. Push file from local computer to Android device using adb push -p
+export async function pushFile(deviceId, localPath, remotePath, onProgress = null) {
   if (!deviceId || !localPath || !remotePath) {
     throw new Error('Missing parameters for adb push')
   }
-  return await runAdbDevice(deviceId, ['push', localPath, remotePath])
+  return await runAdbDevice(deviceId, ['push', '-p', localPath, remotePath], onProgress)
 }
 
-// 8. Pull file from Android device to local computer using adb pull
-export async function pullFile(deviceId, remotePath, localPath) {
+// 8. Pull file from Android device to local computer using adb pull -p
+export async function pullFile(deviceId, remotePath, localPath, onProgress = null) {
   if (!deviceId || !remotePath || !localPath) {
     throw new Error('Missing parameters for adb pull')
   }
@@ -433,7 +450,7 @@ export async function pullFile(deviceId, remotePath, localPath) {
       // ignore
     }
   }
-  return await runAdbDevice(deviceId, ['pull', remotePath, localPath])
+  return await runAdbDevice(deviceId, ['pull', '-p', remotePath, localPath], onProgress)
 }
 
 // Register IPC handlers for Electron
@@ -446,8 +463,16 @@ export function setupAdbIpc() {
   ipcMain.handle('adb:listFiles', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:listDirectory', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:getStorageVolumes', (_, deviceId) => getStorageVolumes(deviceId))
-  ipcMain.handle('adb:pushFile', (_, deviceId, localPath, remotePath) => pushFile(deviceId, localPath, remotePath))
-  ipcMain.handle('adb:pullFile', (_, deviceId, remotePath, localPath) => pullFile(deviceId, remotePath, localPath))
+  ipcMain.handle('adb:pushFile', (event, deviceId, localPath, remotePath) => {
+    return pushFile(deviceId, localPath, remotePath, (percent, text) => {
+      event.sender.send('adb:progress', { percent, text })
+    })
+  })
+  ipcMain.handle('adb:pullFile', (event, deviceId, remotePath, localPath) => {
+    return pullFile(deviceId, remotePath, localPath, (percent, text) => {
+      event.sender.send('adb:progress', { percent, text })
+    })
+  })
   ipcMain.handle('adb:raw', (_, args) => runAdb(args))
 
   // Native macOS dialog and shell handlers

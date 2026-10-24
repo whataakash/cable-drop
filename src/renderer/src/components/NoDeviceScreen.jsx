@@ -4,7 +4,7 @@
 
 import { mobileIcon } from '../assets/icons'
 import { adbReprompt } from '../adb'
-
+// import {logo} from '../assets/logo.png'
 function NoDeviceScreen({ devices = [], onRescan }) {
   const unauthorizedDevice = devices.find((d) => d.state === 'unauthorized')
 
@@ -22,14 +22,14 @@ function NoDeviceScreen({ devices = [], onRescan }) {
           <path
             className="schematic-cable"
             d="M 188 113 C 235 113, 252 58, 280 58"
-            stroke="var(--schematic-blue)"
+            stroke="var(--violet)"
             strokeWidth="1.8"
             strokeLinecap="round"
           />
           <path
             className="schematic-cable"
             d="M 326 58 C 354 58, 375 113, 412 113"
-            stroke="var(--schematic-blue)"
+            stroke="var(--violet)"
             strokeWidth="1.8"
             strokeLinecap="round"
           />
@@ -54,7 +54,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
               fontSize="10"
               fontWeight="700"
               letterSpacing="0.08em"
-              fill="var(--schematic-blue)"
+              fill="var(--violet)"
             >
               CABLE DROP
             </text>
@@ -206,7 +206,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
               height="28"
               rx="6"
               fill="none"
-              stroke="var(--schematic-blue)"
+              stroke="var(--violet)"
               strokeWidth="1.2"
               strokeDasharray="3 3"
             />
@@ -216,7 +216,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
               y1="66"
               x2="465"
               y2="66"
-              stroke="var(--schematic-blue)"
+              stroke="var(--violet)"
               strokeWidth="1.8"
               strokeLinecap="round"
             />
@@ -251,7 +251,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
           <p className="no-device-description">
             {unauthorizedDevice
               ? 'Unlock your Android device and tap "Allow USB debugging" on the screen prompt.'
-              : 'Attach an Android for accessing files and do File Transfer over ADB'}
+              : 'Perhaps, Your phone is playing hide-and-seek.'}
           </p>
         </div>
       </div>
@@ -292,7 +292,7 @@ function NoDeviceScreen({ devices = [], onRescan }) {
         <div className="setup-card">
           <div className="setup-card-header">
             <span className="setup-card-number">01</span>
-            <span>🔌</span>
+            <span>📱</span>
           </div>
           <h3>Connect via USB</h3>
           <p>

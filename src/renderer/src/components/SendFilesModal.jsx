@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import adb from '../adb'
 import SelectDirectoryModal from './SelectDirectoryModal'
 import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, sendLightIcon, arrowIcon } from '../assets/icons'
@@ -88,6 +88,13 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
     setErrorMsg(null)
   }
 
+  // Clean up progress listener on unmount
+  useEffect(() => {
+    return () => {
+      adb.removeProgressListener()
+    }
+  }, [])
+
   // Execute adb push sequentially for all staged files
   async function handleStartPush() {
     if (!device?.id || stagedFiles.length === 0 || transferring) return
@@ -104,8 +111,26 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
     })
     setFileStatuses(statuses)
 
+    let currentFileIdx = 0
+
+    // Listen for real-time progress from adb push -p
+    adb.onProgress((data) => {
+      const val = typeof data === 'object' && data !== null ? data.percent : data
+      const text = typeof data === 'object' && data !== null ? data.text : ''
+      if (total === 1) {
+        setProgressPercent(val)
+      } else {
+        const overall = Math.round(((currentFileIdx + val / 100) / total) * 100)
+        setProgressPercent(overall)
+      }
+      if (text) {
+        setTransferStatsText(text)
+      }
+    })
+
     try {
       for (let i = 0; i < total; i++) {
+        currentFileIdx = i
         const file = stagedFiles[i]
         setCurrentIndex(i)
         setCurrentFileName(file.name)
@@ -128,8 +153,9 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
     } catch (err) {
       console.error('Push error:', err)
       setErrorMsg(err.message || 'File push failed')
-      setFileStatuses((prev) => ({ ...prev, [stagedFiles[currentIndex]?.path]: 'error' }))
+      setFileStatuses((prev) => ({ ...prev, [stagedFiles[currentFileIdx]?.path]: 'error' }))
     } finally {
+      adb.removeProgressListener()
       setTransferring(false)
     }
   }

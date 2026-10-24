@@ -1,57 +1,116 @@
 // WelcomeScreen — first thing the user sees while ADB daemon initializes
 // Shows the brand hero, macOS<->Android diagram, and init checklist
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import logo from '../assets/logo.png'
 import { macIcon, mobileIcon } from '../assets/icons'
 
 function WelcomeScreen({ onInitComplete }) {
   const [progress, setProgress] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
 
-  // fake the init progress for now — real ADB init will replace this
+  const onCompleteRef = useRef(onInitComplete)
+  onCompleteRef.current = onInitComplete
+
+  const isPausedRef = useRef(isPaused)
+  isPausedRef.current = isPaused
+
+  // Initialization progress animation with pause/resume support
   useEffect(() => {
+    if (isPaused) return
+
     const timer = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(timer)
-          // tell the parent we're done after a short delay
-          setTimeout(() => onInitComplete(), 500)
+          if (!isPausedRef.current) {
+            setTimeout(() => {
+              if (!isPausedRef.current) {
+                onCompleteRef.current?.()
+              }
+            }, 400)
+          }
           return 100
         }
-        return prev + 2
+        return prev + 1
       })
-    }, 60)
+    }, 50)
+
     return () => clearInterval(timer)
-  }, [onInitComplete])
+  }, [isPaused])
+
+  // Handle manual proceed/continue
+  function handleContinue() {
+    onCompleteRef.current?.()
+  }
+
+  // Toggle pause/resume
+  function handleTogglePause() {
+    setIsPaused((prev) => !prev)
+  }
+
+  const step1Done = progress >= 30
+  const step2Done = progress >= 70
+  const step3Done = progress >= 100
+
+  function renderStepIcon(isDone, isActive) {
+    if (isDone) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="step-svg">
+          <circle cx="9" cy="9" r="8" stroke="#45C99A" strokeWidth="1.6" />
+          <path d="M5.5 9.2L7.8 11.5L12.5 6.8" stroke="#45C99A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    }
+    if (isActive) {
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="step-svg">
+          <circle cx="9" cy="9" r="8" stroke="#947CFF" strokeWidth="1.6" />
+          <circle cx="9" cy="9" r="3.5" fill="#947CFF" />
+        </svg>
+      )
+    }
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="step-svg">
+        <circle cx="9" cy="9" r="8" stroke="var(--border-main)" strokeWidth="1.6" />
+      </svg>
+    )
+  }
 
   return (
     <div className="welcome">
-      {/* app logo */}
-      <img src={logo} alt="CableDrop" style={{ width: 80, height: 80, borderRadius: 16 }} />
+      {/* Top draggable region for macOS window controls */}
+      <div className="welcome-drag-bar" />
+
+      {/* app logo and title */}
+      <div className="welcome-brand">
+        <img src={logo} alt="CableDrop" className="welcome-logo" />
+        <span className="welcome-brand-title">CABLE DROP</span>
+      </div>
 
       {/* hero text */}
-      <h1>Your files. Between devices. Effortlessly.</h1>
-      <p>Move files between your Mac and Android, without the terminal.</p>
+      <div className="welcome-tagline-badge">SECURE * FAST * OFFLINE</div>
+      <p className="welcome-description">Your Android. Your Mac. One cable.</p>
 
       {/* connection diagram: Mac <----> Android */}
       <div className="welcome-diagram">
         <div className="welcome-diagram-node">
           <div className="welcome-diagram-node-icon">
-            <img src={macIcon} alt="" style={{ width: 32, height: 32 }} />
+            <img src={macIcon} alt="macOS" />
           </div>
-          <strong>macOS Host</strong>
-          <div className="text-muted text-sm">darwin-arm64</div>
+          <strong className="welcome-node-label">macOS</strong>
         </div>
+
         <div className="welcome-diagram-line">
-          <hr />
-          ⇄ libusb transport pipe
+          <div className="welcome-wire-line" />
+          <div className="welcome-chip">USB DEBUGGING & A LITTLE BIT OF MAGIC</div>
         </div>
+
         <div className="welcome-diagram-node">
           <div className="welcome-diagram-node-icon">
-            <img src={mobileIcon} alt="" style={{ width: 32, height: 32 }} />
+            <img src={mobileIcon} alt="Android" />
           </div>
-          <strong>Android Target</strong>
-          <div className="text-muted text-sm">ADB Polling...</div>
+          <strong className="welcome-node-label">Android</strong>
         </div>
       </div>
 
@@ -59,41 +118,74 @@ function WelcomeScreen({ onInitComplete }) {
       <div className="init-steps">
         <div className="init-step">
           <div className="init-step-left">
-            <span className="status-dot ok" />
-            Starting ADB daemon on Mac...
+            {renderStepIcon(step1Done, !step1Done)}
+            <div className="init-step-text">
+              <span className="init-step-title">Waking up the Daemon...</span>
+              <span className="init-step-subtitle">Getting the good stuff ready</span>
+            </div>
           </div>
-          <span className="init-step-result">OK (0.12s)</span>
+          <span className={`init-step-badge ${step1Done ? 'done' : 'pending'}`}>
+            {step1Done ? 'DONE ✓' : 'WAITING'}
+          </span>
         </div>
+
         <div className="init-step">
           <div className="init-step-left">
-            <span className="status-dot ok" />
-            Scanning USB buses on Mac (MTP & ADB filter)...
+            {renderStepIcon(step2Done, step1Done && !step2Done)}
+            <div className="init-step-text">
+              <span className="init-step-title">Looking for your Android...</span>
+              <span className="init-step-subtitle">Come out, come out, wherever you are</span>
+            </div>
           </div>
-          <span className="init-step-result">OK (0.34s)</span>
+          <span className={`init-step-badge ${step2Done ? 'done' : 'pending'}`}>
+            {step2Done ? 'DONE ✓' : 'WAITING'}
+          </span>
         </div>
+
         <div className="init-step">
           <div className="init-step-left">
-            <span className={`status-dot ${progress >= 100 ? 'ok' : 'off'}`} />
-            Ready: Handshake initialized with device pipeline
+            {renderStepIcon(step3Done, step2Done && !step3Done)}
+            <div className="init-step-text">
+              <span className="init-step-title">All systems go?</span>
+              <span className="init-step-subtitle">One last vibe check before launch</span>
+            </div>
           </div>
-          <span className="init-step-result">PORT 5037</span>
+          <span className={`init-step-badge ${step3Done ? 'done' : 'pending'}`}>
+            {step3Done ? 'DONE ✓' : 'PENDING'}
+          </span>
         </div>
       </div>
 
-      {/* progress bar */}
+      {/* progress bar & controls */}
       <div className="init-progress">
         <div className="init-progress-label">
-          <span>Initializing bridge engine v1.4.2...</span>
-          <span>{progress}%</span>
+          <span className="init-progress-title">Setup status</span>
+          <span className="init-progress-percent">{progress}%</span>
         </div>
         <div className="progress-track">
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
-      </div>
 
-      <p className="text-muted text-sm">
-        Automatically detecting connected devices · Press ⌘0 for offline mode
-      </p>
+        {/* Action buttons: Let's get this show on the road + Pause a bit */}
+        <div className="welcome-actions">
+          <button
+            type="button"
+            className="btn btn-primary welcome-road-btn"
+            onClick={handleContinue}
+          >
+            ▶ Let&apos;s roll
+          </button>
+
+          <button
+            type="button"
+            className="welcome-skip-btn"
+            onClick={handleTogglePause}
+            title={isPaused ? "Resume initialization" : "Pause initialization to look around"}
+          >
+            {isPaused ? 'Resume ▶' : 'Pause a bit ⏸'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

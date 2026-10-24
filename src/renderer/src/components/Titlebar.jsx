@@ -2,6 +2,7 @@
 // Left: Cable Drop logo + typed text + Devices/Files tabs
 // Center: live connection status pill
 
+import { useState, useEffect } from 'react'
 import logo from '../assets/logo.png'
 import { sendLightIcon, receiveIcon } from '../assets/icons'
 
@@ -14,6 +15,53 @@ function Titlebar({
   selectedCount = 0
 }) {
   const deviceName = device?.name || device?.model || 'Android Device'
+  const [zoomFactor, setZoomFactor] = useState(1.0)
+
+  // Read zoom helper from bridge
+  const getZoomBridge = () => window.zoom || window.api?.zoom
+
+  // Sync zoom factor on mount and when keyboard shortcuts are used
+  useEffect(() => {
+    const bridge = getZoomBridge()
+    if (bridge?.getZoomFactor) {
+      setZoomFactor(bridge.getZoomFactor())
+    }
+
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '0')) {
+        setTimeout(() => {
+          const b = getZoomBridge()
+          if (b?.getZoomFactor) {
+            setZoomFactor(b.getZoomFactor())
+          }
+        }, 50)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  function handleZoomIn() {
+    const bridge = getZoomBridge()
+    if (bridge?.zoomIn) {
+      setZoomFactor(bridge.zoomIn())
+    }
+  }
+
+  function handleZoomOut() {
+    const bridge = getZoomBridge()
+    if (bridge?.zoomOut) {
+      setZoomFactor(bridge.zoomOut())
+    }
+  }
+
+  function handleResetZoom() {
+    const bridge = getZoomBridge()
+    if (bridge?.resetZoom) {
+      setZoomFactor(bridge.resetZoom())
+    }
+  }
 
   return (
     <header className="app-header">
@@ -80,6 +128,35 @@ function Titlebar({
             <img src={receiveIcon} alt="" className="btn-icon" />
             Save to Mac
           </button>
+
+          {/* Zoom in & out controls */}
+          <div className="zoom-controls">
+            <button
+              type="button"
+              className="zoom-btn"
+              onClick={handleZoomOut}
+              title="Zoom out (⌘-)"
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+            <span
+              className="zoom-level"
+              onClick={handleResetZoom}
+              title="Click to reset zoom (⌘0)"
+            >
+              {Math.round(zoomFactor * 100)}%
+            </span>
+            <button
+              type="button"
+              className="zoom-btn"
+              onClick={handleZoomIn}
+              title="Zoom in (⌘+)"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
     </header>

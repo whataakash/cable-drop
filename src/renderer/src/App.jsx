@@ -16,12 +16,11 @@ import logo from './assets/logo.png'
 import adb from './adb'
 
 function App() {
-  // Launch animation state: plays smooth logo animation on open
-  const [isLaunching, setIsLaunching] = useState(true)
-  const [splashFading, setSplashFading] = useState(false)
+  // Welcome initialization gate: ensures WelcomeScreen completes before showing main screens
+  const [isWelcomeDone, setIsWelcomeDone] = useState(false)
 
-  // Screen state: 'no-device' | 'devices' | 'files'
-  const [screen, setScreen] = useState('no-device')
+  // Screen state: 'welcome' | 'no-device' | 'devices' | 'files'
+  const [screen, setScreen] = useState('welcome')
 
   // Navigation tab state
   const [activeTab, setActiveTab] = useState('devices')
@@ -77,8 +76,10 @@ function App() {
       } else {
         setSelectedDevice(null)
         setDeviceVolumes({})
-        setScreen('no-device')
-        setActiveTab('devices')
+        if (isWelcomeDone) {
+          setScreen('no-device')
+          setActiveTab('devices')
+        }
       }
 
       return listWithNames
@@ -87,8 +88,10 @@ function App() {
       setDevices([])
       setSelectedDevice(null)
       setDeviceVolumes({})
-      setScreen('no-device')
-      setActiveTab('devices')
+      if (isWelcomeDone) {
+        setScreen('no-device')
+        setActiveTab('devices')
+      }
       return []
     }
   }
@@ -118,16 +121,16 @@ function App() {
     setSelectedFiles([])
   }
 
-  // Launch animation: brief display then smooth transition to main UI
-  useEffect(() => {
-    const fadeTimer = setTimeout(() => setSplashFading(true), 1800)
-    const unmountTimer = setTimeout(() => setIsLaunching(false), 2200)
-
-    return () => {
-      clearTimeout(fadeTimer)
-      clearTimeout(unmountTimer)
-    }
-  }, [])
+  // Handle completion of WelcomeScreen initialization
+  function handleWelcomeComplete() {
+    setIsWelcomeDone(true)
+    setDevices((currentDevices) => {
+      const hasAuth = currentDevices.some((d) => d.state === 'device')
+      setScreen(hasAuth ? 'devices' : 'no-device')
+      setActiveTab('devices')
+      return currentDevices
+    })
+  }
 
   // Load daemon info and poll devices in background
   useEffect(() => {
@@ -147,6 +150,8 @@ function App() {
 
   // Sync screen with real connection state
   useEffect(() => {
+    if (!isWelcomeDone) return
+
     const hasAuthorizedDevice = devices.some((d) => d.state === 'device')
 
     if (!hasAuthorizedDevice) {
@@ -158,7 +163,7 @@ function App() {
       setScreen('devices')
       setActiveTab('devices')
     }
-  }, [devices, screen])
+  }, [devices, screen, isWelcomeDone])
 
   const authorizedDevices = devices.filter((d) => d.state === 'device')
   const activeDevice = selectedDevice || authorizedDevices[0] || null
@@ -187,11 +192,11 @@ function App() {
 
   // Render main screen area
   function renderContent() {
+    if (!isWelcomeDone) {
+      return <WelcomeScreen onInitComplete={handleWelcomeComplete} />
+    }
+
     switch (screen) {
-      case 'welcome':
-        return <WelcomeScreen onInitComplete={() => setScreen('devices')} />
-      case 'no-device':
-        return <NoDeviceScreen devices={devices} onRescan={refreshDevices} />
       case 'devices':
         return (
           <ConnectedDevices
@@ -254,27 +259,17 @@ function App() {
 
   return (
     <div className="app">
-      {/* Launch animation splash overlay */}
-      {isLaunching && (
-        <div className={`launch-splash ${splashFading ? 'fade-out' : ''}`}>
-          <img src={logo} alt="CableDrop" className="launch-splash-logo" />
-          <span className="launch-splash-title">CABLE DROP</span>
-          <div className="launch-splash-tagline">
-            AirDrop, over a cable.
-            <br />
-            Secure. Fast. Offline.
-          </div>
-        </div>
-      )}
 
-      <Titlebar
-        device={activeDevice}
-        currentPage={activeTab}
-        onNavigate={handleNavigate}
-        onSendFiles={handleSendFromTitlebar}
-        onReceiveFiles={handleReceiveFromTitlebar}
-        selectedCount={selectedFiles.length}
-      />
+      {isWelcomeDone && (
+        <Titlebar
+          device={activeDevice}
+          currentPage={activeTab}
+          onNavigate={handleNavigate}
+          onSendFiles={handleSendFromTitlebar}
+          onReceiveFiles={handleReceiveFromTitlebar}
+          selectedCount={selectedFiles.length}
+        />
+      )}
 
       <div className="app-body">
         {showSidebar && (

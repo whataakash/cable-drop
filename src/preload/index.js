@@ -1,7 +1,26 @@
 // Preload script — safely exposes ADB and Electron APIs to the React renderer
 
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webFrame } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+
+// Zoom controller using Electron webFrame
+const zoom = {
+  zoomIn: () => {
+    const next = Math.min(Number((webFrame.getZoomFactor() + 0.1).toFixed(1)), 2.0)
+    webFrame.setZoomFactor(next)
+    return next
+  },
+  zoomOut: () => {
+    const next = Math.max(Number((webFrame.getZoomFactor() - 0.1).toFixed(1)), 0.6)
+    webFrame.setZoomFactor(next)
+    return next
+  },
+  resetZoom: () => {
+    webFrame.setZoomFactor(1.0)
+    return 1.0
+  },
+  getZoomFactor: () => Number(webFrame.getZoomFactor().toFixed(1))
+}
 
 // ADB API methods bridged through Electron IPC
 const adb = {
@@ -20,12 +39,18 @@ const adb = {
   openDirectory: (defaultPath) => ipcRenderer.invoke('dialog:openDirectory', defaultPath),
   openPath: (folderPath) => ipcRenderer.invoke('shell:openPath', folderPath),
   getDefaultDownloads: () => ipcRenderer.invoke('system:getDefaultDownloads'),
-  raw: (args) => ipcRenderer.invoke('adb:raw', args)
+  raw: (args) => ipcRenderer.invoke('adb:raw', args),
+  onProgress: (callback) => {
+    ipcRenderer.removeAllListeners('adb:progress')
+    ipcRenderer.on('adb:progress', (_, data) => callback(data))
+  },
+  removeProgressListener: () => ipcRenderer.removeAllListeners('adb:progress')
 }
 
 // Custom APIs for renderer
 const api = {
-  adb
+  adb,
+  zoom
 }
 
 // Expose APIs to window object in React
@@ -34,6 +59,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
     contextBridge.exposeInMainWorld('adb', adb)
+    contextBridge.exposeInMainWorld('zoom', zoom)
   } catch (error) {
     console.error('Error exposing preload APIs:', error)
   }
@@ -41,4 +67,5 @@ if (process.contextIsolated) {
   window.electron = electronAPI
   window.api = api
   window.adb = adb
+  window.zoom = zoom
 }
