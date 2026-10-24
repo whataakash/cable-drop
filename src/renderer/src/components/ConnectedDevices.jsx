@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { mobileIcon, folderLightIcon } from '../assets/icons'
+import { adbReprompt } from '../adb'
 
 function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevice }) {
   // State for inline device renaming
@@ -14,6 +15,15 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
     setEditingId(device.id)
     setEditName(device.name || '')
   }
+
+  // Rescan for connected devices via ADB and reprompt
+  async function handleRescan() {
+    await adbReprompt()
+    if (onRescan) {
+      onRescan()
+    }
+  }
+
 
   // Save new device name and exit editing mode
   function saveEditing(deviceId) {
@@ -39,7 +49,7 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
           </span>
         </h2>
         <div className="devices-header-actions">
-          <button className="btn btn-secondary" onClick={onRescan}>Re-Scan</button>
+          <button className="btn btn-secondary" onClick={handleRescan}>Re-Scan</button>
         </div>
       </div>
 
@@ -133,12 +143,12 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
                   Browse Files
                 </button>
               ) : (
-                <button className="btn btn-secondary" onClick={onRescan}>
+                <button className="btn btn-secondary" onClick={handleRescan}>
                   🔑 Check Phone for RSA Prompt
                 </button>
               )}
               <div className="device-card-actions-right">
-                <button className="btn btn-secondary" onClick={onRescan}>
+                <button className="btn btn-secondary" onClick={handleRescan}>
                   ↻ Refresh Status
                 </button>
               </div>

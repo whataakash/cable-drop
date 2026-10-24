@@ -3,6 +3,7 @@
 // macOS Workstation <--- [USB 3.2] ---> Android Target + Daemon status badge
 
 import { mobileIcon } from '../assets/icons'
+import { adbReprompt } from '../adb'
 
 function NoDeviceScreen({ devices = [], onRescan }) {
   const unauthorizedDevice = devices.find((d) => d.state === 'unauthorized')
@@ -274,10 +275,13 @@ function NoDeviceScreen({ devices = [], onRescan }) {
           </div>
           <button
             className="btn btn-secondary"
-            onClick={onRescan}
+            onClick={async () => {
+              await adbReprompt()
+              if (onRescan) onRescan()
+            }}
             style={{ marginLeft: 'auto', flexShrink: 0 }}
           >
-            <img src={mobileIcon} alt="" className="btn-icon" />
+            <img src={mobileIcon} alt="" className="btn-icon" onClick={adbReprompt}/>
             Re-scan Authorization
           </button>
         </div>

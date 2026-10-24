@@ -47,6 +47,11 @@ export const adb = {
     return await bridge.killServer()
   },
 
+  // Reprompt phone for RSA authorization
+  async reprompt() {
+    return await adbReprompt()
+  },
+
   // List files on device path
   async listFiles(deviceId, path = '/sdcard') {
     const bridge = getBridge()
@@ -151,4 +156,18 @@ export const adb = {
   }
 }
 
+// Kill ADB server and restart it so Android resends the RSA authorization prompt
+export async function adbReprompt() {
+  try {
+    console.log('[ADB] Killing ADB server to resend authorization prompt...')
+    await adb.killServer()
+    await adb.startServer()
+    await adb.getDevices()
+  } catch (err) {
+    console.error('Failed to reprompt ADB:', err)
+  }
+}
+
+
 export default adb
+
