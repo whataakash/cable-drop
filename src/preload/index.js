@@ -10,6 +10,7 @@ const adb = {
   getDevices: () => ipcRenderer.invoke('adb:devices'),
   startServer: () => ipcRenderer.invoke('adb:startServer'),
   killServer: () => ipcRenderer.invoke('adb:killServer'),
+  reconnect: (deviceId) => ipcRenderer.invoke('adb:reconnect', deviceId),
   listFiles: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
   listDirectory: (deviceId, path) => ipcRenderer.invoke('adb:listFiles', deviceId, path),
   getStorageVolumes: (deviceId) => ipcRenderer.invoke('adb:getStorageVolumes', deviceId),

@@ -276,12 +276,12 @@ function NoDeviceScreen({ devices = [], onRescan }) {
           <button
             className="btn btn-secondary"
             onClick={async () => {
-              await adbReprompt()
+              await adbReprompt(unauthorizedDevice?.id)
               if (onRescan) onRescan()
             }}
             style={{ marginLeft: 'auto', flexShrink: 0 }}
           >
-            <img src={mobileIcon} alt="" className="btn-icon" onClick={adbReprompt}/>
+            <img src={mobileIcon} alt="" className="btn-icon" onClick={() => adbReprompt(unauthorizedDevice?.id)} />
             Re-scan Authorization
           </button>
         </div>
