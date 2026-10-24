@@ -170,20 +170,6 @@ export async function killAdbServer() {
   return await runAdb(['kill-server'])
 }
 
-// 5. Reconnect a specific device to trigger the RSA prompt on that device only
-export async function reconnectDevice(deviceId) {
-  if (deviceId) {
-    try {
-      await runAdb(['-s', deviceId, 'reconnect', 'offline'])
-    } catch {
-      // ignore
-    }
-    return await runAdb(['-s', deviceId, 'reconnect'])
-  }
-  return await runAdb(['reconnect', 'offline'])
-}
-
-
 // Helper to run ADB targeting a specific device serial using spawn
 export function runAdbDevice(deviceId, shellArgs = []) {
   return new Promise((resolve, reject) => {
@@ -457,7 +443,6 @@ export function setupAdbIpc() {
   ipcMain.handle('adb:devices', () => getConnectedDevices())
   ipcMain.handle('adb:startServer', () => startAdbServer())
   ipcMain.handle('adb:killServer', () => killAdbServer())
-  ipcMain.handle('adb:reconnect', (_, deviceId) => reconnectDevice(deviceId))
   ipcMain.handle('adb:listFiles', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:listDirectory', (_, deviceId, path) => listDirectory(deviceId, path))
   ipcMain.handle('adb:getStorageVolumes', (_, deviceId) => getStorageVolumes(deviceId))

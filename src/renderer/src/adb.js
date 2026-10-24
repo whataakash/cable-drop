@@ -48,15 +48,8 @@ export const adb = {
   },
 
   // Reprompt phone for RSA authorization
-  async reprompt(deviceId) {
-    return await adbReprompt(deviceId)
-  },
-
-  // Reconnect a specific device or all offline devices
-  async reconnect(deviceId) {
-    const bridge = getBridge()
-    if (!bridge) throw new Error('ADB bridge is not available')
-    return await bridge.reconnect(deviceId)
+  async reprompt() {
+    return await adbReprompt()
   },
 
   // List files on device path
@@ -163,22 +156,17 @@ export const adb = {
   }
 }
 
-// Reconnect a specific device to trigger the RSA prompt on that device only
-export async function adbReprompt(deviceId) {
+// Kill ADB server and restart it so Android resends the RSA authorization prompt
+export async function adbReprompt() {
   try {
-    if (deviceId) {
-      console.log('[ADB] Reconnecting device for RSA prompt:', deviceId)
-      await adb.reconnect(deviceId)
-    } else {
-      console.log('[ADB] Reconnecting offline devices...')
-      await adb.reconnect()
-    }
+    console.log('[ADB] Killing ADB server to resend authorization prompt...')
+    await adb.killServer()
+    await adb.startServer()
     await adb.getDevices()
   } catch (err) {
     console.error('Failed to reprompt ADB:', err)
   }
 }
-
 
 
 export default adb

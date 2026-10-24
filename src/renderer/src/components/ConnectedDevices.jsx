@@ -16,14 +16,13 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
     setEditName(device.name || '')
   }
 
-  // Reprompt only this particular device for RSA authorization
-  async function handleRepromptDevice(deviceId) {
-    await adbReprompt(deviceId)
+  // Rescan for connected devices via ADB and reprompt
+  async function handleRescan() {
+    await adbReprompt()
     if (onRescan) {
       onRescan()
     }
   }
-
 
 
   // Save new device name and exit editing mode
@@ -144,12 +143,12 @@ function ConnectedDevices({ devices = [], onBrowseFiles, onRescan, onRenameDevic
                   Browse Files
                 </button>
               ) : (
-                <button className="btn btn-secondary" onClick={() => handleRepromptDevice(device.id)}>
+                <button className="btn btn-secondary" onClick={handleRescan}>
                   🔑 Check Phone for RSA Prompt
                 </button>
               )}
               <div className="device-card-actions-right">
-                <button className="btn btn-secondary" onClick={onRescan}>
+                <button className="btn btn-secondary" onClick={handleRescan}>
                   ↻ Refresh Status
                 </button>
               </div>
