@@ -48,7 +48,7 @@ function App() {
   // Modals
   const [showSendModal, setShowSendModal] = useState(false)
   const [showReceiveModal, setShowReceiveModal] = useState(false)
-  const [sendTargetDir, setSendTargetDir] = useState('/sdcard/Download')
+  const [sendTargetDir, setSendTargetDir] = useState('/sdcard/Download/CableDrop')
   const [receiveFilesList, setReceiveFilesList] = useState([])
   const [selectedFiles, setSelectedFiles] = useState([])
 
@@ -74,6 +74,9 @@ function App() {
       const authorized = listWithNames.find((d) => d.state === 'device')
       if (authorized) {
         setSelectedDevice((prev) => (prev ? listWithNames.find((d) => d.id === prev.id) || authorized : authorized))
+
+        // Ensure default CableDrop directory exists in mobile internal storage
+        adb.makeDirectory(authorized.id, '/sdcard/Download/CableDrop').catch(() => {})
 
         // Query each authorized device's storage volumes individually
         listWithNames
@@ -277,7 +280,8 @@ function App() {
 
   // Send to phone from titlebar button
   function handleSendFromTitlebar() {
-    setSendTargetDir(browserPath || '/sdcard/Download')
+    const isBrowsingSpecific = activeTab === 'files' && browserPath && browserPath !== '/sdcard'
+    setSendTargetDir(isBrowsingSpecific ? browserPath : '/sdcard/Download/CableDrop')
     setShowSendModal(true)
   }
 
@@ -334,6 +338,8 @@ function App() {
       {showReceiveModal && (
         <ReceiveFilesModal
           device={activeDevice}
+          volumes={currentVolumes}
+          initialPath={browserPath || '/sdcard'}
           files={receiveFilesList}
           onClose={() => setShowReceiveModal(false)}
           onLogTransfer={handleLogTransfer}

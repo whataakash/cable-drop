@@ -92,8 +92,8 @@ export async function getConnectedDevices() {
       if (!line) continue
 
       // Format example:
-      // "6c6e0c7 device usb:51380224X product:phoenixin model:POCO_X2 device:phoenixin transport_id:5"
-      // "6c6e0c7 unauthorized usb:51380224X transport_id:3"
+      // "ABC1234567 device usb:12345678X product:generic model:Pixel_7 device:generic transport_id:5"
+      // "ABC1234567 unauthorized usb:12345678X transport_id:3"
       const parts = line.split(/\s+/)
       const id = parts[0]
       const state = parts[1] || 'unknown' // 'device' | 'unauthorized' | 'offline'
@@ -457,10 +457,32 @@ export async function getStorageVolumes(deviceId) {
   return volumes
 }
 
-// 7. Push file from local computer to Android device using adb push -p
+// 7. Create directory on Android mobile
+export async function makeDirectory(deviceId, remotePath) {
+  if (!deviceId || !remotePath || typeof remotePath !== 'string') {
+    throw new Error('Missing parameters for makeDirectory')
+  }
+  if (!remotePath.startsWith('/')) {
+    throw new Error('Invalid directory path: must start with /')
+  }
+  if (/[\0;&|`$\n\r]/.test(remotePath)) {
+    throw new Error('Invalid characters in directory path')
+  }
+  const cleanPath = remotePath.replace(/\/+/g, '/')
+  await runAdbDevice(deviceId, ['shell', 'mkdir', '-p', cleanPath])
+  return cleanPath
+}
+
+// 8. Push file from local computer to Android device using adb push -p
 export async function pushFile(deviceId, localPath, remotePath, onProgress = null) {
   if (!deviceId || !localPath || !remotePath) {
     throw new Error('Missing parameters for adb push')
+  }
+  // Ensure destination folder exists on Android
+  try {
+    await makeDirectory(deviceId, remotePath)
+  } catch {
+    // ignore if already exists or cannot create
   }
   return await runAdbDevice(deviceId, ['push', '-p', localPath, remotePath], onProgress)
 }
@@ -578,7 +600,7 @@ export function setupAdbIpc() {
     })
   })
   ipcMain.handle('adb:cancelTransfer', () => cancelTransfer())
-  ipcMain.handle('adb:raw', (_, args) => runAdb(args))
+  ipcMain.handle('adb:makeDirectory', (_, deviceId, path) => makeDirectory(deviceId, path))
 
   // Native macOS dialog and shell handlers
   ipcMain.handle('dialog:openFiles', async () => {
@@ -645,7 +667,7 @@ export function setupAdbIpc() {
   })
 
   ipcMain.handle('shell:openPath', async (_, folderPath) => {
-    if (folderPath) {
+    if (folderPath && typeof folderPath === 'string' && existsSync(folderPath)) {
       shell.openPath(folderPath)
     }
   })

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import adb from '../adb'
 import { folderIcon, imageIcon, videoIcon, receiveIcon } from '../assets/icons'
 
-function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSelect, onClose }) {
-  const [currentPath, setCurrentPath] = useState(initialPath || '/sdcard/Download')
+function SelectDirectoryModal({ device, initialPath = '/sdcard/Download/CableDrop', onSelect, onClose }) {
+  const [currentPath, setCurrentPath] = useState(initialPath || '/sdcard/Download/CableDrop')
   const [folders, setFolders] = useState([])
   const [volumes, setVolumes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -31,6 +31,9 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
     setError(null)
 
     try {
+      if (path === '/sdcard/Download/CableDrop') {
+        await adb.makeDirectory(device.id, path).catch(() => {})
+      }
       const items = await adb.listFiles(device.id, path)
       // Filter only directories, excluding hidden . folders
       const subDirs = (items || [])
@@ -78,6 +81,7 @@ function SelectDirectoryModal({ device, initialPath = '/sdcard/Download', onSele
 
   // Common quick shortcuts
   const shortcuts = [
+    { label: 'CableDrop', path: '/sdcard/Download/CableDrop', icon: receiveIcon },
     { label: 'Download', path: '/sdcard/Download', icon: receiveIcon },
     { label: 'DCIM', path: '/sdcard/DCIM', icon: imageIcon },
     { label: 'Documents', path: '/sdcard/Documents', icon: folderIcon },

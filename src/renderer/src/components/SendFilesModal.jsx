@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import adb from '../adb'
 import SelectDirectoryModal from './SelectDirectoryModal'
-import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, sendLightIcon, arrowIcon } from '../assets/icons'
+import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, sendLightIcon, arrowIcon, androidIcon, cableDropIcon } from '../assets/icons'
 
 function formatSize(bytes) {
   if (!bytes) return '—'
@@ -19,11 +19,28 @@ function getFileIcon(filename, isDirectory) {
   return fileIcon
 }
 
-function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose, onSuccess, onLogTransfer }) {
+const DEFAULT_TARGET_DIR = '/sdcard/Download/CableDrop'
+
+function SendFilesModal({ device, targetDirectory = DEFAULT_TARGET_DIR, onClose, onSuccess, onLogTransfer }) {
   const [stagedFiles, setStagedFiles] = useState([])
-  const [targetDir, setTargetDir] = useState(targetDirectory || '/sdcard/Download')
-  const [hasChosenDir, setHasChosenDir] = useState(Boolean(targetDirectory))
+  const [targetDir, setTargetDir] = useState(targetDirectory || DEFAULT_TARGET_DIR)
+  const [hasChosenDir, setHasChosenDir] = useState(true)
   const [showPickerModal, setShowPickerModal] = useState(false)
+
+  // Sync targetDir if targetDirectory prop changes
+  useEffect(() => {
+    if (targetDirectory) {
+      setTargetDir(targetDirectory)
+      setHasChosenDir(true)
+    }
+  }, [targetDirectory])
+
+  // Ensure target folder exists on mobile
+  useEffect(() => {
+    if (device?.id && targetDir) {
+      adb.makeDirectory(device.id, targetDir).catch(() => {})
+    }
+  }, [device?.id, targetDir])
 
   // Transfer execution states
   const [transferring, setTransferring] = useState(false)
@@ -268,7 +285,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         <div className="modal-header">
           <div>
             <h3>Send files to Mobile</h3>
-            <p>using your Type C Cable</p>
+            <p>Fast and Secure!</p>
           </div>
           <button className="modal-close" onClick={onClose} disabled={transferring}>✕</button>
         </div>
@@ -318,7 +335,10 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
             <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div
                 className={`drop-zone ${stagedFiles.length > 0 ? 'selected' : ''}`}
-                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                style={{
+                  cursor: transferring ? 'not-allowed' : 'pointer',
+                  backgroundColor: stagedFiles.length === 0 ? '#30284d' : undefined
+                }}
                 onDragOver={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -328,9 +348,9 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
               >
                 {stagedFiles.length === 0 ? (
                   <>
-                    <img src={folderIcon} alt="" className="drop-zone-svg" />
+                    <img src={macIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">Choose files or folders from Mac...</div>
-                    <div className="drop-zone-sub text-muted">Click or drag & drop to send</div>
+                    <div className="drop-zone-sub text-muted">Click to send</div>
                   </>
                 ) : (
                   <>
@@ -360,7 +380,10 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
             <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div
                 className={`drop-zone ${hasChosenDir ? 'selected' : ''}`}
-                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                style={{
+                  cursor: transferring ? 'not-allowed' : 'pointer',
+                  backgroundColor: !hasChosenDir ? '#30284d' : undefined
+                }}
                 onDragOver={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -380,25 +403,25 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                   </>
                 ) : (
                   <>
-                    <img src={mobileIcon} alt="" className="drop-zone-svg" />
+                    <img src={androidIcon} alt="" className="drop-zone-svg" />
                     <div className="drop-zone-label">Browse folder on Phone...</div>
                     <div className="drop-zone-sub text-muted">Choose destination folder on mobile</div>
                   </>
                 )}
               </div>
               <div style={{ height: '24px', display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                {hasChosenDir && (
+                {targetDir !== DEFAULT_TARGET_DIR && (
                   <button
                     type="button"
                     className="btn btn-secondary"
                     style={{ height: '22px', fontSize: '11px', padding: '0 8px' }}
                     onClick={() => {
-                      setHasChosenDir(false)
-                      setTargetDir('/sdcard/Download')
+                      setTargetDir(DEFAULT_TARGET_DIR)
+                      setHasChosenDir(true)
                     }}
                     disabled={transferring}
                   >
-                    Clear folder
+                    Reset to default
                   </button>
                 )}
               </div>
@@ -423,7 +446,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
             {stagedFiles.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                No files or folders staged yet. Choose files/folders above or drag and drop from Finder.
+                No files or folders staged yet. Choose files/folders above from Finder.
               </div>
             ) : (
               <ul className="staged-list" style={{ maxHeight: '180px', overflowY: 'auto' }}>
@@ -513,7 +536,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
                 <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
               </div>
               <div className="transfer-progress-stats">
-                <span>{transferStatsText || '(ADB USB High-Speed Pipe)'}</span>
+                <span>{transferStatsText || '(ADB USB High-Speed Transfer)'}</span>
                 <span>{completed ? 'Done' : 'Pushing...'}</span>
               </div>
             </div>
@@ -522,7 +545,9 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
         {/* footer */}
         <div className="modal-footer">
-          <span className="text-muted text-sm">Powered by Cable-Drop</span>
+          <span className="text-muted text-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            Powered by <img src={cableDropIcon} alt="" style={{ width: 14, height: 14 }} /> Cable-Drop
+          </span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
             {transferring ? (
               <button className="btn btn-secondary" onClick={handleCancelTransfer}>

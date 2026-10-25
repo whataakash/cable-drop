@@ -1,10 +1,16 @@
 {
-  "name": "package.json",
-  "version": "1.0.0",
+  "name": "cable-drop",
+  "version": "1.0.1",
   "description": "AirDrop's DevMode Alternative, using USB Cable",
+  "productName": "CableDrop",
   "main": "./out/main/index.js",
   "author": "whataakash",
+  "license": "MIT",
   "homepage": "https://github.com/whataakash/cable-drop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/whataakash/cable-drop.git"
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
@@ -13,9 +19,74 @@
     "build": "electron-vite build",
     "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
+    "build:dmg": "npm run build && electron-builder --mac dmg",
+    "build:mac": "npm run build && electron-builder --mac dmg",
+    "build:mac:arm64": "npm run build && electron-builder --mac dmg --arm64",
+    "build:mac:x64": "npm run build && electron-builder --mac dmg --x64",
+    "build:mac:universal": "npm run build && electron-builder --mac dmg --universal",
     "build:win": "npm run build && electron-builder --win",
-    "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.whataakash.cabledrop",
+    "productName": "CableDrop",
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "files": [
+      "!**/.vscode/*",
+      "!src/*",
+      "!electron.vite.config.{js,ts,mjs,cjs}",
+      "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}",
+      "!{.env,.env.*,.npmrc,pnpm-lock.yaml}"
+    ],
+    "asarUnpack": [
+      "resources/**"
+    ],
+    "extraResources": [
+      {
+        "from": "build/platform-tools",
+        "to": "platform-tools"
+      }
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.utilities",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg"
+        }
+      ],
+      "extendInfo": {
+        "NSDocumentsFolderUsageDescription": "Application requests access to the user's Documents folder.",
+        "NSDownloadsFolderUsageDescription": "Application requests access to the user's Downloads folder."
+      },
+      "notarize": false
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    }
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -27,7 +98,7 @@
     "@electron-toolkit/eslint-config-prettier": "^3.0.1",
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^44.7.2",
-    "electron-builder": "^26.15.3",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",

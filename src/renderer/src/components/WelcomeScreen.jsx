@@ -32,9 +32,9 @@ function WelcomeScreen({ onInitComplete }) {
           }
           return 100
         }
-        return prev + 2
+        return prev + 1
       })
-    }, 16)
+    }, 28)
 
     return () => clearInterval(timer)
   }, [isPaused])
@@ -134,7 +134,7 @@ function WelcomeScreen({ onInitComplete }) {
             {renderStepIcon(step2Done, step1Done && !step2Done)}
             <div className="init-step-text">
               <span className="init-step-title">Looking for your Android...</span>
-              <span className="init-step-subtitle">Come out, come out, wherever you are</span>
+              <span className="init-step-subtitle">Checking if it's awake</span>
             </div>
           </div>
           <span className={`init-step-badge ${step2Done ? 'done' : 'pending'}`}>
@@ -146,8 +146,8 @@ function WelcomeScreen({ onInitComplete }) {
           <div className="init-step-left">
             {renderStepIcon(step3Done, step2Done && !step3Done)}
             <div className="init-step-text">
-              <span className="init-step-title">All systems go?</span>
-              <span className="init-step-subtitle">One last vibe check before launch</span>
+              <span className="init-step-title">Preparing for Launch 🚀</span>
+              <span className="init-step-subtitle">One last vibe check</span>
             </div>
           </div>
           <span className={`init-step-badge ${step3Done ? 'done' : 'pending'}`}>

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import adb from '../adb'
-import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, receiveLightIcon, arrowIcon } from '../assets/icons'
+import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, receiveLightIcon, arrowIcon, cableDropIcon } from '../assets/icons'
 import FileBrowser from './FileBrowser'
 
 function formatSize(bytes) {
@@ -22,12 +22,36 @@ function getFileIcon(filename, isFolder) {
   return fileIcon
 }
 
-function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
+function ReceiveFilesModal({
+  device,
+  volumes: propVolumes = [],
+  initialPath = '/sdcard',
+  files = [],
+  onClose,
+  onLogTransfer
+}) {
   const [stagedFiles, setStagedFiles] = useState(files || [])
   const [saveLocation, setSaveLocation] = useState('')
   const [defaultSaveDir, setDefaultSaveDir] = useState('')
   const [hasCustomFolder, setHasCustomFolder] = useState(false)
   const [showBrowserModal, setShowBrowserModal] = useState(false)
+  const [browsePath, setBrowsePath] = useState(initialPath || '/sdcard')
+  const [volumes, setVolumes] = useState(propVolumes || [])
+
+  // Load storage volumes (Internal Storage + external SD Card)
+  useEffect(() => {
+    if (propVolumes && propVolumes.length > 0) {
+      setVolumes(propVolumes)
+    } else if (device?.id) {
+      adb.getStorageVolumes(device.id)
+        .then((vols) => {
+          if (vols && vols.length > 0) setVolumes(vols)
+        })
+        .catch(() => {})
+    }
+  }, [device?.id, propVolumes])
+
+  const sdCard = volumes.find((v) => v.type === 'sdcard')
 
   // Transfer execution states
   const [transferring, setTransferring] = useState(false)
@@ -271,7 +295,8 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
 
   // Storage type indicator (Internal Storage vs SD Card)
   const firstPath = stagedFiles[0]?.fullPath || stagedFiles[0]?.path || ''
-  const isSdCard = firstPath.startsWith('/storage/') && !firstPath.startsWith('/storage/emulated')
+  const isSdCard = (firstPath && firstPath.startsWith('/storage/') && !firstPath.startsWith('/storage/emulated')) ||
+    (!firstPath && browsePath.startsWith('/storage/') && !browsePath.startsWith('/storage/emulated'))
   const storageType = isSdCard ? 'SD Card' : 'Internal Storage'
 
   // Friendly folder name for Mac destination
@@ -288,7 +313,7 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
         <div className="modal-header">
           <div>
             <h3>Receive files from Mobile</h3>
-            <p>using your Type C Cable</p>
+            <p>Fast and Secure!</p>
           </div>
           <button className="modal-close" onClick={onClose} disabled={transferring}>✕</button>
         </div>
@@ -339,7 +364,10 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
             <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div
                 className={`drop-zone ${stagedFiles.length > 0 ? 'selected' : ''}`}
-                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                style={{
+                  cursor: transferring ? 'not-allowed' : 'pointer',
+                  backgroundColor: stagedFiles.length === 0 ? '#30284d' : undefined
+                }}
                 onClick={transferring ? undefined : () => setShowBrowserModal(true)}
               >
                 {stagedFiles.length === 0 ? (
@@ -360,7 +388,37 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
                   </>
                 )}
               </div>
-              <div style={{ height: '24px', display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <div style={{ height: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {sdCard && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ height: '22px', fontSize: '11px', padding: '0 8px' }}
+                        onClick={() => {
+                          setBrowsePath('/sdcard')
+                          setShowBrowserModal(true)
+                        }}
+                        disabled={transferring}
+                      >
+                        💾 Internal
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        style={{ height: '22px', fontSize: '11px', padding: '0 8px' }}
+                        onClick={() => {
+                          setBrowsePath(sdCard.path)
+                          setShowBrowserModal(true)
+                        }}
+                        disabled={transferring}
+                      >
+                        💳 SD Card
+                      </button>
+                    </>
+                  )}
+                </div>
                 {stagedFiles.length > 0 && (
                   <button
                     type="button"
@@ -379,7 +437,10 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
             <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <div
                 className={`drop-zone ${saveLocation ? 'selected' : ''}`}
-                style={{ cursor: transferring ? 'not-allowed' : 'pointer' }}
+                style={{
+                  cursor: transferring ? 'not-allowed' : 'pointer',
+                  backgroundColor: !saveLocation ? '#30284d' : undefined
+                }}
                 onClick={transferring ? undefined : handleChooseFolder}
               >
                 {saveLocation ? (
@@ -540,7 +601,9 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
 
         {/* footer */}
         <div className="modal-footer">
-          <span className="text-muted text-sm">Powered by Cable-Drop</span>
+          <span className="text-muted text-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            Powered by <img src={cableDropIcon} alt="" style={{ width: 14, height: 14 }} /> Cable-Drop
+          </span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
             {transferring ? (
               <button className="btn btn-secondary" onClick={handleCancelTransfer}>
@@ -599,10 +662,35 @@ function ReceiveFilesModal({ device, files = [], onClose, onLogTransfer }) {
               </div>
               <button className="modal-close" onClick={() => setShowBrowserModal(false)}>✕</button>
             </div>
+
+            {/* Storage switcher if SD Card is present */}
+            {sdCard && (
+              <div style={{ display: 'flex', gap: '8px', padding: '0 var(--space-md) 10px', alignItems: 'center' }}>
+                <span className="text-muted text-sm" style={{ fontWeight: 600 }}>Storage:</span>
+                <button
+                  type="button"
+                  className={`btn ${!browsePath.startsWith(sdCard.path) ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ height: '26px', fontSize: '12px', padding: '0 10px' }}
+                  onClick={() => setBrowsePath('/sdcard')}
+                >
+                  💾 Internal Storage
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${browsePath.startsWith(sdCard.path) ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ height: '26px', fontSize: '12px', padding: '0 10px' }}
+                  onClick={() => setBrowsePath(sdCard.path)}
+                >
+                  💳 SD Card
+                </button>
+              </div>
+            )}
+
             <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '0 var(--space-md) var(--space-md)' }}>
               <FileBrowser
                 device={device}
-                initialPath="/sdcard"
+                initialPath={browsePath}
+                onPathChange={(p) => setBrowsePath(p)}
                 onReceiveFiles={(chosenItems) => {
                   setStagedFiles(chosenItems)
                   setShowBrowserModal(false)

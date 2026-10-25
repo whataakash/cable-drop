@@ -10,6 +10,8 @@ import receiveLightIcon from './receive-light.svg'
 import sendIcon from './send.svg'
 import sendLightIcon from './send-light.svg'
 import videoIcon from './video.svg'
+import androidIcon from './android.svg' 
+import cableDropIcon from './logo.svg'
 
 export {
   arrowIcon,
@@ -23,6 +25,8 @@ export {
   receiveLightIcon,
   sendIcon,
   sendLightIcon,
-  videoIcon
+  videoIcon,
+  androidIcon,
+  cableDropIcon
 }
 

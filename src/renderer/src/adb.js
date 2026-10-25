@@ -134,6 +134,13 @@ export const adb = {
     return await bridge.cancelTransfer()
   },
 
+  // Create directory on mobile device
+  async makeDirectory(deviceId, path) {
+    const bridge = getBridge()
+    if (!bridge || !bridge.makeDirectory) return path
+    return await bridge.makeDirectory(deviceId, path)
+  },
+
   // Pick files or folders from Mac using native Finder dialog
   async openFiles() {
     const bridge = getBridge()
@@ -167,13 +174,6 @@ export const adb = {
     const bridge = getBridge()
     if (!bridge || !bridge.getDefaultDownloads) return '~/Downloads'
     return await bridge.getDefaultDownloads()
-  },
-
-  // Run custom ADB command arguments
-  async raw(args) {
-    const bridge = getBridge()
-    if (!bridge) throw new Error('ADB bridge is not available')
-    return await bridge.raw(args)
   },
 
   // Listen for file transfer progress updates (0-100%)

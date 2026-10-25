@@ -37,12 +37,12 @@ const adb = {
   pushFile: (deviceId, local, remote) => ipcRenderer.invoke('adb:pushFile', deviceId, local, remote),
   pullFile: (deviceId, remote, local) => ipcRenderer.invoke('adb:pullFile', deviceId, remote, local),
   cancelTransfer: () => ipcRenderer.invoke('adb:cancelTransfer'),
+  makeDirectory: (deviceId, path) => ipcRenderer.invoke('adb:makeDirectory', deviceId, path),
   openFiles: () => ipcRenderer.invoke('dialog:openFiles'),
   openFolders: () => ipcRenderer.invoke('dialog:openFolders'),
   openDirectory: (defaultPath) => ipcRenderer.invoke('dialog:openDirectory', defaultPath),
   openPath: (folderPath) => ipcRenderer.invoke('shell:openPath', folderPath),
   getDefaultDownloads: () => ipcRenderer.invoke('system:getDefaultDownloads'),
-  raw: (args) => ipcRenderer.invoke('adb:raw', args),
   onProgress: (callback) => {
     ipcRenderer.removeAllListeners('adb:progress')
     ipcRenderer.on('adb:progress', (_, data) => callback(data))
