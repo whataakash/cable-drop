@@ -19,11 +19,11 @@
     "build": "electron-vite build",
     "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:dmg": "npm run build && electron-builder --mac dmg",
-    "build:mac": "npm run build && electron-builder --mac dmg",
-    "build:mac:arm64": "npm run build && electron-builder --mac dmg --arm64",
-    "build:mac:x64": "npm run build && electron-builder --mac dmg --x64",
-    "build:mac:universal": "npm run build && electron-builder --mac dmg --universal",
+    "build:dmg": "npm run build && electron-builder --mac dmg && node scripts/set-dmg-icon.js",
+    "build:mac": "npm run build && electron-builder --mac dmg && node scripts/set-dmg-icon.js",
+    "build:mac:arm64": "npm run build && electron-builder --mac dmg --arm64 && node scripts/set-dmg-icon.js",
+    "build:mac:x64": "npm run build && electron-builder --mac dmg --x64 && node scripts/set-dmg-icon.js",
+    "build:mac:universal": "npm run build && electron-builder --mac dmg --universal && node scripts/set-dmg-icon.js",
     "build:win": "npm run build && electron-builder --win",
     "build:linux": "npm run build && electron-builder --linux"
   },
@@ -68,6 +68,7 @@
       "notarize": false
     },
     "dmg": {
+      "icon": "build/icon.icns",
       "title": "${productName} ${version}",
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "contents": [
