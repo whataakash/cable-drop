@@ -11,14 +11,37 @@ function formatTimestamp(date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-// Break the line after the file path in ADB stats output
+// Format bytes into KB, MB, and GB
+function formatSize(bytes) {
+  if (bytes === undefined || bytes === null || isNaN(bytes)) return '—'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB'
+}
+
+// Replace raw "n bytes" in ADB stats output with human-readable KB, MB, GB
+function formatBytesInText(text) {
+  if (!text || typeof text !== 'string') return text
+  return text.replace(/\b([\d,]+)\s*bytes?\b/gi, (match, numStr) => {
+    const cleanNum = numStr.replace(/,/g, '')
+    const num = parseInt(cleanNum, 10)
+    if (isNaN(num)) return match
+    return formatSize(num)
+  })
+}
+
+// Break the line after the file path in ADB stats output and format bytes to KB, MB, GB
 function formatStatsText(statsText) {
   if (!statsText) return null
 
-  const colonIndex = statsText.indexOf(': ')
-  if (colonIndex !== -1 && (statsText.startsWith('/') || statsText.startsWith('~') || statsText.includes('/'))) {
-    const filePath = statsText.slice(0, colonIndex + 1)
-    const rest = statsText.slice(colonIndex + 2)
+  // Format any raw "X bytes" into KB / MB / GB
+  const cleanStats = formatBytesInText(statsText)
+
+  const colonIndex = cleanStats.indexOf(': ')
+  if (colonIndex !== -1 && (cleanStats.startsWith('/') || cleanStats.startsWith('~') || cleanStats.includes('/'))) {
+    const filePath = cleanStats.slice(0, colonIndex + 1)
+    const rest = cleanStats.slice(colonIndex + 2)
     return (
       <span className="logs-stats-text">
         <span className="logs-stats-path">{filePath}</span>
@@ -28,7 +51,7 @@ function formatStatsText(statsText) {
     )
   }
 
-  return <span className="logs-stats-text">{statsText}</span>
+  return <span className="logs-stats-text">{cleanStats}</span>
 }
 
 function TransferLogs({ logs = [], onClear }) {
@@ -89,7 +112,7 @@ function TransferLogs({ logs = [], onClear }) {
         <div className="logs-metric-card">
           <span className="logs-metric-label">Success Rate</span>
           <span className="logs-metric-val success">
-            {logs.length > 0 ? `${Math.round((completedCount / logs.length) * 100)}%` : '100%'}
+            {logs.length===0?'-':(logs.length > 0 ? `${Math.round((completedCount / logs.length) * 100)}%` : '100%')}
           </span>
         </div>
       </div>

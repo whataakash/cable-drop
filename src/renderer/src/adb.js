@@ -127,6 +127,13 @@ export const adb = {
     return await bridge.pullFile(deviceId, remotePath, localPath)
   },
 
+  // Cancel active file transfer (executes Control+C / SIGINT on adb)
+  async cancelTransfer() {
+    const bridge = getBridge()
+    if (!bridge || !bridge.cancelTransfer) return false
+    return await bridge.cancelTransfer()
+  },
+
   // Pick files or folders from Mac using native Finder dialog
   async openFiles() {
     const bridge = getBridge()

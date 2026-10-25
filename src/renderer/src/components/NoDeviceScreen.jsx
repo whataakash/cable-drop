@@ -5,7 +5,7 @@
 import { mobileIcon } from '../assets/icons'
 import { adbReprompt } from '../adb'
 // import {logo} from '../assets/logo.png'
-function NoDeviceScreen({ devices = [], onRescan }) {
+function NoDeviceScreen({ devices = [], onRescan, onViewLogs }) {
   const unauthorizedDevice = devices.find((d) => d.state === 'unauthorized')
 
   return (
@@ -334,6 +334,11 @@ function NoDeviceScreen({ devices = [], onRescan }) {
         <button className="btn btn-primary" onClick={onRescan}>
           ↻ Check connection
         </button>
+        {onViewLogs && (
+          <button className="btn btn-secondary" onClick={onViewLogs}>
+            📋 View Transfer Logs
+          </button>
+        )}
       </div>
     </div>
   )

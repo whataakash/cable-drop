@@ -91,8 +91,8 @@ function App() {
         setSelectedDevice(null)
         setDeviceVolumes({})
         if (isWelcomeDone) {
-          setScreen('no-device')
-          setActiveTab('devices')
+          setScreen((prev) => (prev === 'logs' ? 'logs' : 'no-device'))
+          setActiveTab((prev) => (prev === 'logs' ? 'logs' : 'devices'))
         }
       }
 
@@ -103,8 +103,8 @@ function App() {
       setSelectedDevice(null)
       setDeviceVolumes({})
       if (isWelcomeDone) {
-        setScreen('no-device')
-        setActiveTab('devices')
+        setScreen((prev) => (prev === 'logs' ? 'logs' : 'no-device'))
+        setActiveTab((prev) => (prev === 'logs' ? 'logs' : 'devices'))
       }
       return []
     }
@@ -169,7 +169,7 @@ function App() {
     const hasAuthorizedDevice = devices.some((d) => d.state === 'device')
 
     if (!hasAuthorizedDevice) {
-      if (screen !== 'no-device') {
+      if (screen !== 'no-device' && screen !== 'logs') {
         setScreen('no-device')
         setActiveTab('devices')
       }
@@ -246,7 +246,13 @@ function App() {
           />
         )
       default:
-        return <NoDeviceScreen devices={devices} onRescan={refreshDevices} />
+        return (
+          <NoDeviceScreen
+            devices={devices}
+            onRescan={refreshDevices}
+            onViewLogs={() => handleNavigate('logs')}
+          />
+        )
     }
   }
 

@@ -170,6 +170,22 @@ export async function killAdbServer() {
   return await runAdb(['kill-server'])
 }
 
+// Tracks actively running push/pull process for cancellation
+let currentTransferProcess = null
+
+export function cancelTransfer() {
+  if (currentTransferProcess) {
+    try {
+      currentTransferProcess.kill('SIGINT') // Executes Control+C
+    } catch {
+      // ignore
+    }
+    currentTransferProcess = null
+    return true
+  }
+  return false
+}
+
 // Helper to run ADB targeting a specific device serial using spawn
 export function runAdbDevice(deviceId, shellArgs = [], onProgress = null) {
   return new Promise((resolve, reject) => {
@@ -180,6 +196,10 @@ export function runAdbDevice(deviceId, shellArgs = [], onProgress = null) {
 
     const adbPath = getAdbPath()
     const child = spawn(adbPath, ['-s', deviceId, ...shellArgs])
+
+    if (shellArgs[0] === 'push' || shellArgs[0] === 'pull') {
+      currentTransferProcess = child
+    }
 
     let stdout = ''
     let stderr = ''
@@ -214,6 +234,14 @@ export function runAdbDevice(deviceId, shellArgs = [], onProgress = null) {
     })
 
     child.on('close', (code) => {
+      if (currentTransferProcess === child) {
+        currentTransferProcess = null
+      }
+
+      if (child.killed) {
+        return reject(new Error('Transfer cancelled'))
+      }
+
       const combined = (stdout + '\n' + stderr).trim()
 
       if (combined.includes('device unauthorized') || stderr.includes('device unauthorized')) {
@@ -549,6 +577,7 @@ export function setupAdbIpc() {
       event.sender.send('adb:progress', { percent, text })
     })
   })
+  ipcMain.handle('adb:cancelTransfer', () => cancelTransfer())
   ipcMain.handle('adb:raw', (_, args) => runAdb(args))
 
   // Native macOS dialog and shell handlers

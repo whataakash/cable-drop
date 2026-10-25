@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import adb from '../adb'
 import SelectDirectoryModal from './SelectDirectoryModal'
 import { macIcon, mobileIcon, folderIcon, fileIcon, imageIcon, videoIcon, sendLightIcon, arrowIcon } from '../assets/icons'
@@ -34,6 +34,29 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
   const [transferStatsText, setTransferStatsText] = useState('')
   const [completed, setCompleted] = useState(false)
   const [errorMsg, setErrorMsg] = useState(null)
+
+  const isCancelledRef = useRef(false)
+  const progressTimerRef = useRef(null)
+
+  // Cancel active transfer by sending Ctrl+C (SIGINT) to the adb process
+  async function handleCancelTransfer() {
+    isCancelledRef.current = true
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current)
+      progressTimerRef.current = null
+    }
+    await adb.cancelTransfer()
+    setTransferStatsText('Transfer cancelled.')
+  }
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+      }
+    }
+  }, [])
 
   const deviceName = device?.name || device?.model || 'Android Device'
 
@@ -103,6 +126,7 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
     setErrorMsg(null)
     setCompleted(false)
     setProgressPercent(0)
+    isCancelledRef.current = false
 
     const total = stagedFiles.length
     const statuses = {}
@@ -130,16 +154,45 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
 
     try {
       for (let i = 0; i < total; i++) {
+        if (isCancelledRef.current) break
+
         currentFileIdx = i
         const file = stagedFiles[i]
         setCurrentIndex(i)
         setCurrentFileName(file.name)
         setFileStatuses((prev) => ({ ...prev, [file.path]: 'inFlight' }))
         const itemType = file.isDirectory ? 'folder' : 'file'
-        setTransferStatsText(`Pushing ${itemType} ${i + 1} of ${total}: ${file.name}`)
-        setProgressPercent(Math.round((i / total) * 100))
+
+        // Calculate progress slice and estimated transfer duration using average USB speed (~25 MB/s)
+        const startPercent = Math.round((i / total) * 100)
+        const endPercent = Math.round(((i + 1) / total) * 100)
+        const fileBytes = file.size && file.size > 0 ? file.size : 5 * 1024 * 1024
+        const estimatedSec = Math.max(1.2, fileBytes / (25 * 1024 * 1024))
+        const fileStartTime = Date.now()
+
+        setProgressPercent(startPercent)
+
+        // Smooth dummy progress timer advancing towards 92% of this file's slice
+        if (progressTimerRef.current) clearInterval(progressTimerRef.current)
+        progressTimerRef.current = setInterval(() => {
+          const elapsedSec = (Date.now() - fileStartTime) / 1000
+          const fraction = Math.min(0.92, elapsedSec / estimatedSec)
+          const currentP = Math.round(startPercent + fraction * (endPercent - startPercent))
+          setProgressPercent(Math.min(currentP, 98))
+
+          const speedMB = (24 + Math.sin(elapsedSec * 3) * 3).toFixed(1)
+          const remainingSec = Math.max(1, Math.round(estimatedSec - elapsedSec))
+          setTransferStatsText(`Pushing at ~${speedMB} MB/s · ETA: ~${remainingSec}s`)
+        }, 100)
 
         const output = await adb.pushFile(device.id, file.path, targetDir)
+
+        if (progressTimerRef.current) {
+          clearInterval(progressTimerRef.current)
+          progressTimerRef.current = null
+        }
+        setProgressPercent(endPercent)
+
         setFileStatuses((prev) => ({ ...prev, [file.path]: 'done' }))
         if (output) {
           setTransferStatsText(output)
@@ -159,13 +212,19 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         }
       }
 
-      setProgressPercent(100)
-      setCompleted(true)
-      setTransferStatsText(`All ${total} items pushed successfully!`)
-      if (onSuccess) onSuccess()
+      if (!isCancelledRef.current) {
+        setProgressPercent(100)
+        setCompleted(true)
+        setTransferStatsText(`All ${total} items pushed successfully!`)
+        if (onSuccess) onSuccess()
+      }
     } catch (err) {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+        progressTimerRef.current = null
+      }
       console.error('Push error:', err)
-      setErrorMsg(err.message || 'File push failed')
+      setErrorMsg(isCancelledRef.current ? 'Transfer cancelled.' : err.message || 'File push failed')
       setFileStatuses((prev) => ({ ...prev, [stagedFiles[currentFileIdx]?.path]: 'error' }))
       if (onLogTransfer && stagedFiles[currentFileIdx]) {
         onLogTransfer({
@@ -181,6 +240,10 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         })
       }
     } finally {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current)
+        progressTimerRef.current = null
+      }
       adb.removeProgressListener()
       setTransferring(false)
     }
@@ -461,9 +524,15 @@ function SendFilesModal({ device, targetDirectory = '/sdcard/Download', onClose,
         <div className="modal-footer">
           <span className="text-muted text-sm">Powered by Cable-Drop</span>
           <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-            <button className="btn btn-secondary" onClick={onClose} disabled={transferring}>
-              {completed ? 'Close' : 'Cancel'}
-            </button>
+            {transferring ? (
+              <button className="btn btn-secondary" onClick={handleCancelTransfer}>
+                Cancel Transfer
+              </button>
+            ) : (
+              <button className="btn btn-secondary" onClick={onClose}>
+                {completed ? 'Close' : 'Cancel'}
+              </button>
+            )}
             {!completed ? (
               <button
                 className="btn btn-primary"
